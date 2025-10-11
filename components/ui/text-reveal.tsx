@@ -13,7 +13,7 @@ export const TextReveal: FC<TextRevealProps> = ({ children, className }) => {
   const targetRef = useRef<HTMLSpanElement | null>(null);
   const { scrollYProgress } = useScroll({
     target: targetRef,
-    offset: ["start 0.6", "end 0.4"], // Animasi trigger di tengah layar (60% dari top)
+    offset: ["start 0.5", "end 0.4"],
   });
 
   if (typeof children !== "string") {

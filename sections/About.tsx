@@ -1,14 +1,11 @@
 import { AuroraText } from "@/components/ui/aurora-text";
-import { ShineBorder } from "@/components/ui/shine-border";
 import { TextReveal } from "@/components/ui/text-reveal";
 import Image from "next/image";
 import React from "react";
 
 const About = () => {
   return (
-    <div className="relative z-10 lg:px-24 sm:px-6 px-4 py-5 lg:py-12 md:px-16 md:py-7 w-[90%]  lg:w-full bg-gray-900/60 backdrop-blur-xl shadow-2xl rounded-3xl border-t border-gray-600 ">
-      <ShineBorder shineColor={["#A07CFE"]} />
-
+    <div className="relative z-10 lg:px-24 sm:px-6 px-4 py-5 lg:py-12 md:px-16 md:py-7 w-full lg:w-full bg-gray-900/60 backdrop-blur-xl shadow-2xl rounded-3xl border-t border-gray-600 ">
       <Image
         height={580}
         width={580}

@@ -44,18 +44,23 @@ const Main = () => {
 
         <main className="flex justify-center text-center items-center w-full">
           <div className="flex flex-col text-white">
-            <h1 className="text-4xl font-medium font-funky tracking-tighte lg:text-6xl">
+            <h1 className="text-4xl bg-clip-text bg- text-transparent bg-gradient-to-b from-white via-white/55 to-zinc-800 font-medium font-funky tracking-tighte lg:text-7xl">
               Valter 2025
               <SparklesText colors={{ first: "#A07CFE", second: "#4f39f6" }}>
                 <AuroraText
                   className="md:text-4xl text-3xl"
                   speed={1}
-                  colors={["#8a0194", "#59168b", "#4f39f6", "#6e11b0"]}
+                  colors={[
+                    "oklch(49.1% 0.27 292.581)",
+                    "oklch(49.6% 0.265 301.924)",
+                    "oklch(40.1% 0.17 325.612)",
+                    "oklch(54.1% 0.281 293.009)",
+                  ]}
                 >
                   Creative Synergy
                 </AuroraText>
               </SparklesText>
-              <p className="leading-relaxed font-extralight text-xs">
+              <p className="leading-relaxed text-white font-extralight text-lg">
                 Kreativitas{" "}
                 <Highlighter action="underline" color="#FF9800">
                   Berdaya
