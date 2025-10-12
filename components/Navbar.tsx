@@ -12,7 +12,7 @@ const Navbar = ({ show }: { show: boolean }) => {
       <div className="pt-3 z-50 flex justify-center items-center top-0 right-0">
         <div className="w-full">
           <motion.div
-            className="relative backdrop-blur-xl overflow-hidden text-white p-3 border-t border-gray-600 bg-gray-800/40 shadow-2xl rounded-xl"
+            className="relative backdrop-blur-xl overflow-hidden text-white p-3 border-t border-gray-600 bg-gray-800/10 shadow-2xl rounded-2xl"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5 }}

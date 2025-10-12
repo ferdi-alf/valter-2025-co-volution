@@ -1,10 +1,11 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Play, XIcon } from "lucide-react"
-import { AnimatePresence, motion } from "motion/react"
+import { useState } from "react";
+import { Play, XIcon } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
+import Image from "next/image";
 
 type AnimationStyle =
   | "from-bottom"
@@ -14,14 +15,14 @@ type AnimationStyle =
   | "from-right"
   | "fade"
   | "top-in-bottom-out"
-  | "left-in-right-out"
+  | "left-in-right-out";
 
 interface HeroVideoProps {
-  animationStyle?: AnimationStyle
-  videoSrc: string
-  thumbnailSrc: string
-  thumbnailAlt?: string
-  className?: string
+  animationStyle?: AnimationStyle;
+  videoSrc: string;
+  thumbnailSrc: string;
+  thumbnailAlt?: string;
+  className?: string;
 }
 
 const animationVariants = {
@@ -65,7 +66,7 @@ const animationVariants = {
     animate: { x: 0, opacity: 1 },
     exit: { x: "100%", opacity: 0 },
   },
-}
+};
 
 export function HeroVideoDialog({
   animationStyle = "from-center",
@@ -74,24 +75,27 @@ export function HeroVideoDialog({
   thumbnailAlt = "Video thumbnail",
   className,
 }: HeroVideoProps) {
-  const [isVideoOpen, setIsVideoOpen] = useState(false)
-  const selectedAnimation = animationVariants[animationStyle]
+  const [isVideoOpen, setIsVideoOpen] = useState(false);
+  const selectedAnimation = animationVariants[animationStyle];
 
   return (
-    <div className={cn("relative", className)}>
+    <div className={cn("relative   ", className)}>
       <button
         type="button"
         aria-label="Play video"
-        className="group relative cursor-pointer border-0 bg-transparent p-0"
+        className="group relative cursor-pointer w-full flex justify-center items-center border-0 bg-transparent p-0"
         onClick={() => setIsVideoOpen(true)}
       >
-        <img
-          src={thumbnailSrc}
-          alt={thumbnailAlt}
-          width={1920}
-          height={1080}
-          className="w-full rounded-md border shadow-lg transition-all duration-200 ease-out group-hover:brightness-[0.8]"
-        />
+        <div className="border rounded-3xl flex-col w-full bg-white h-[400px] flex justify-center items-center">
+          <h1 className="font-funky text-2xl">Valter 2025</h1>
+          <Image
+            src={thumbnailSrc}
+            alt={thumbnailAlt}
+            width={1920}
+            height={1080}
+            className="w-52 rounded-md transition-all duration-200 ease-out group-hover:brightness-[0.8]"
+          />
+        </div>
         <div className="absolute inset-0 flex scale-[0.9] items-center justify-center rounded-2xl transition-all duration-200 ease-out group-hover:scale-100">
           <div className="bg-primary/10 flex size-28 items-center justify-center rounded-full backdrop-blur-md">
             <div
@@ -117,12 +121,12 @@ export function HeroVideoDialog({
             tabIndex={0}
             onKeyDown={(e) => {
               if (e.key === "Escape" || e.key === "Enter" || e.key === " ") {
-                setIsVideoOpen(false)
+                setIsVideoOpen(false);
               }
             }}
             onClick={() => setIsVideoOpen(false)}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-md"
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-md"
           >
             <motion.div
               {...selectedAnimation}
@@ -146,5 +150,5 @@ export function HeroVideoDialog({
         )}
       </AnimatePresence>
     </div>
-  )
+  );
 }

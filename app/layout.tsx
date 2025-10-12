@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { LightRays } from "@/components/ui/light-rays";
+
 import AppWrapper from "@/components/AppWrapper";
 
 const geistSans = Geist({
@@ -35,8 +35,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} relative bg-zinc-950  antialiased`}
       >
-        <LightRays color="oklch(15.1% 0.149 302.717)" count={10} speed={3} />
-
+        {/* <LightRays color="oklch(15.1% 0.149 302.717)" count={10} speed={3} /> */}
         <div className="">
           <AppWrapper>{children}</AppWrapper>
         </div>

@@ -1,6 +1,7 @@
 import About from "@/sections/About";
 import Features from "@/sections/Features";
 import Main from "@/sections/Main";
+import { TeaserVideo } from "@/sections/TeaserVideo";
 
 export default function Home() {
   return (
@@ -19,6 +20,9 @@ export default function Home() {
           <About />
           <div className="relative">
             <Features />
+            <div className="mt-[950px] w-full lg:mt-[650px]">
+              <TeaserVideo />
+            </div>
           </div>
         </div>
       </div>

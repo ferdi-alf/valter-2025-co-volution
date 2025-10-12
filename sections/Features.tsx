@@ -2,10 +2,11 @@
 import Lanyard from "@/components/Lanyard";
 import LaserFlow from "@/components/LaserFlow";
 import { ShineBorder } from "@/components/ui/shine-border";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export default function Features() {
   const [isMobile, setIsMobile] = useState(false);
+  const lanyardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -13,10 +14,32 @@ export default function Features() {
     };
 
     checkMobile();
-
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
+
+  useEffect(() => {
+    if (!isMobile || !lanyardRef.current) return;
+
+    const lanyardArea = lanyardRef.current;
+
+    // Prevent scroll only when touching lanyard area
+    const preventScroll = (e: TouchEvent) => {
+      e.stopPropagation();
+    };
+
+    lanyardArea.addEventListener("touchstart", preventScroll, {
+      passive: false,
+    });
+    lanyardArea.addEventListener("touchmove", preventScroll, {
+      passive: false,
+    });
+
+    return () => {
+      lanyardArea.removeEventListener("touchstart", preventScroll);
+      lanyardArea.removeEventListener("touchmove", preventScroll);
+    };
+  }, [isMobile]);
 
   const topPosition = isMobile ? "50%" : "50%";
   const lanyardSize: [number, number, number] = isMobile
@@ -38,7 +61,7 @@ export default function Features() {
       />
 
       <div
-        className="rounded-3xl "
+        className="rounded-3xl"
         style={{
           position: "absolute",
           top: topPosition,
@@ -52,26 +75,32 @@ export default function Features() {
           zIndex: 6,
         }}
       >
-        <div className="relative w-full h-full rounded-3xl ">
+        <div className="relative w-full h-full rounded-3xl">
           <ShineBorder shineColor={["#A07CFE", "#FE8FB5", "#7f22fe"]} />
           <div className="grid justify-end grid-cols-1 divide-y-reverse md:grid-cols-2">
             <div className="p-5 lg:order-1 order-2">
-              <h1 className="font-black text-center lg:order-1 text-4xl md:mb-3">
+              <h1 className="font-funky bg-clip-text text-transparent bg-gradient-to-b from-white via-white/55 to-zinc-500 text-center lg:order-1 text-4xl md:mb-3">
                 Co-Create or <br /> Compete
               </h1>
-              <p className="md:text-xl text-sm md:text-center text-start font-light text font-serif mt-5 md:mt-32">
+              <p className="md:text-xl text-sm text-start font-light text font-serif mt-5 md:mt-36">
                 Seminar VALTER 2025 hadir sebagai acara puncak dari Festival
                 Multimedia dan Komputer (VALTER)! Dengan mengusung tema
-                “CoCreate or Compete: Kolaborasi atau Kompetisi bersama AI”,
-                seminar ini menjadi momen spesial yang menghadirkan Kevin
-                Anggara, content creator dan penulis muda sebagai GUEST STAR
-                inspiratif untuk berbagi pengalaman dan insight terbaru. Seminar
-                ini menggali bagaimana kreativitas, teknologi, dan AI dapat
-                berjalan berdampingan, sekaligus menjadi tantangan di era
+                &quot;CoCreate or Compete: Kolaborasi atau Kompetisi bersama
+                AI&quot;, seminar ini menjadi momen spesial yang menghadirkan
+                Kevin Anggara, content creator dan penulis muda sebagai GUEST
+                STAR inspiratif untuk berbagi pengalaman dan insight terbaru.
+                Seminar ini menggali bagaimana kreativitas, teknologi, dan AI
+                dapat berjalan berdampingan, sekaligus menjadi tantangan di era
                 digital dan content creation
               </p>
             </div>
-            <div className="lg:order-2 order-1">
+            <div
+              ref={lanyardRef}
+              className="lg:order-2 order-1"
+              style={{
+                touchAction: isMobile ? "none" : "auto",
+              }}
+            >
               <Lanyard position={lanyardSize} gravity={[0, -40, 0]} />
             </div>
           </div>
