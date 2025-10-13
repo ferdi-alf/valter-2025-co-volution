@@ -18,7 +18,6 @@ const Navbar = ({ show }: { show: boolean }) => {
             transition={{ duration: 0.5 }}
           >
             <div className="flex gap-2 items-center">
-              {/* Logo dengan layoutId SAMA */}
               <motion.div
                 layoutId="logo-transition"
                 style={{

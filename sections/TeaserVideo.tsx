@@ -1,11 +1,19 @@
+import GradientText from "@/components/GradientText";
 import { HeroVideoDialog } from "@/components/ui/hero-video-dialog";
 
 export function TeaserVideo() {
   return (
-    <div className="">
+    <div className="mb-5">
       <div className="text-center">
-        <h1 className="font-funky text-7xl bg-clip-text text-transparent bg-gradient-to-b from-white via-white/50 to-zinc-900 font-medium font-funky tracking-tighte">
-          Teaser Video
+        <h1 className="font-funky text-4xl mb-3 md:text-7xl   font-medium font-funky tracking-tighte">
+          <GradientText
+            colors={["#5d0ec0", "#9810fa", "#8a0194", "#9810fa", "#5d0ec0"]}
+            animationSpeed={6}
+            showBorder={false}
+            className="custom-class"
+          >
+            Teaser Video
+          </GradientText>
         </h1>
       </div>
       <HeroVideoDialog

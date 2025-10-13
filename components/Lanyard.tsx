@@ -42,7 +42,7 @@ export default function Lanyard({
   transparent = true,
 }: LanyardProps) {
   return (
-    <div className="lanyard-wrapper ">
+    <div className="lanyard-wrapper w-full ">
       <Canvas
         camera={{ position, fov }}
         gl={{ alpha: transparent }}

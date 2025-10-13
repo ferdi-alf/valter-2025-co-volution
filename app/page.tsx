@@ -1,7 +1,10 @@
 import About from "@/sections/About";
+
 import Features from "@/sections/Features";
 import Main from "@/sections/Main";
+import Poster from "@/sections/Poster";
 import { TeaserVideo } from "@/sections/TeaserVideo";
+import Timeline from "@/sections/Timeline";
 
 export default function Home() {
   return (
@@ -18,10 +21,12 @@ export default function Home() {
 
         <div className="lg:px-36 px-3 absolute w-full flex flex-col justify-center  ">
           <About />
-          <div className="relative">
+          <div className="relative ">
             <Features />
-            <div className="mt-[950px] w-full lg:mt-[650px]">
+            <div className="mt-[1300px] sm:mt-[550px] md:mt-[500px] w-full lg:mt-[500px]">
               <TeaserVideo />
+              <Poster />
+              <Timeline />
             </div>
           </div>
         </div>
