@@ -155,7 +155,7 @@ const TimelineItem = ({ item, index }: TimelineItemProps) => {
         <motion.div
           whileHover={{ scale: 1.03, y: -5 }}
           transition={{ type: "spring", stiffness: 300 }}
-          className="flex-1 ml-20 md:ml-0"
+          className="flex-1 ml-3 md:ml-0"
         >
           <div className="relative group">
             <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-violet-600 rounded-2xl opacity-0 group-hover:opacity-30 blur-xl transition-opacity duration-500" />
@@ -187,7 +187,7 @@ const TimelineItem = ({ item, index }: TimelineItemProps) => {
                       d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                     />
                   </svg>
-                  <span className="text-sm font-medium text-purple-300">
+                  <span className="md:text-sm text-xs font-medium text-purple-300">
                     {item.waktu}
                   </span>
                 </motion.div>
@@ -198,7 +198,7 @@ const TimelineItem = ({ item, index }: TimelineItemProps) => {
                     isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }
                   }
                   transition={{ delay: index * 0.1 + 0.5 }}
-                  className="text-xl md:text-2xl font-bold text-white mb-2 leading-tight"
+                  className="text-lg md:text-2xl font-bold text-white mb-2 leading-tight"
                 >
                   {item.title}
                 </motion.h3>

@@ -44,14 +44,14 @@ const CountdownCards: React.FC = () => {
 
     const timer = setInterval(() => {
       setTimeLeft(calculateTimeLeft());
-    }, 1000);
+    }, 100);
 
     return () => clearInterval(timer);
   }, []);
 
   if (!mounted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center p-4">
+      <div className="min-w-lg bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center p-4">
         <div className="text-white">Loading...</div>
       </div>
     );

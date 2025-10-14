@@ -4,7 +4,7 @@ import { AnimatedBeamDemo } from "@/components/Kegiatan";
 
 const Poster = () => {
   return (
-    <div className="">
+    <div className="" id="kegiatan">
       <h1 className=" text-4xl mt-15 md:text-6xl   font-medium font-funky tracking-tighte">
         <GradientText
           colors={["#5d0ec0", "#9810fa", "#8a0194", "#9810fa", "#5d0ec0"]}

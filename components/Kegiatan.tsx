@@ -4,6 +4,7 @@ import React, { forwardRef, useRef, useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { AnimatedBeam } from "./ui/animated-beam";
 import Image from "next/image";
+import Link from "next/link";
 
 const Circle = forwardRef<
   HTMLDivElement,
@@ -38,6 +39,7 @@ interface Kegiatan {
   id: number;
   title: string;
   description: string;
+  slug: string;
   logo: string;
   harga: {
     idr: number;
@@ -93,26 +95,30 @@ export function AnimatedBeamDemo() {
       <div className="flex size-full max-h-[200px] w-full flex-col items-stretch justify-between gap-10">
         <div className="flex flex-row items-center justify-between">
           <Circle ref={div1Ref}>
-            {kegiatan[0] && (
-              <Image
-                height={580}
-                width={580}
-                src={kegiatan[0].logo}
-                alt={kegiatan[0].title}
-                className="w-full h-full object-contain"
-              />
-            )}
+            <Link href={`/event/${kegiatan[0].slug}`}>
+              {kegiatan[0] && (
+                <Image
+                  height={580}
+                  width={580}
+                  src={kegiatan[0].logo}
+                  alt={kegiatan[0].title}
+                  className="w-full h-full object-contain"
+                />
+              )}
+            </Link>
           </Circle>
           <Circle ref={div2Ref}>
-            {kegiatan[1] && (
-              <Image
-                height={580}
-                width={580}
-                src={kegiatan[1].logo}
-                alt={kegiatan[1].title}
-                className="w-full h-full object-contain"
-              />
-            )}
+            <Link href={`/event/${kegiatan[1].slug}`}>
+              {kegiatan[1] && (
+                <Image
+                  height={580}
+                  width={580}
+                  src={kegiatan[1].logo}
+                  alt={kegiatan[1].title}
+                  className="w-full h-full object-contain"
+                />
+              )}
+            </Link>
           </Circle>
         </div>
 
@@ -130,26 +136,30 @@ export function AnimatedBeamDemo() {
 
         <div className="flex flex-row items-center justify-between">
           <Circle ref={div3Ref}>
-            {kegiatan[2] && (
-              <Image
-                height={580}
-                width={580}
-                src={kegiatan[2].logo}
-                alt={kegiatan[2].title}
-                className="w-full h-full object-contain"
-              />
-            )}
+            <Link href={`/event/${kegiatan[2].slug}`}>
+              {kegiatan[2] && (
+                <Image
+                  height={580}
+                  width={580}
+                  src={kegiatan[2].logo}
+                  alt={kegiatan[2].title}
+                  className="w-full h-full object-contain"
+                />
+              )}
+            </Link>
           </Circle>
           <Circle ref={div4Ref}>
-            {kegiatan[3] && (
-              <Image
-                height={580}
-                width={580}
-                src={kegiatan[3].logo}
-                alt={kegiatan[3].title}
-                className="w-full h-full object-contain"
-              />
-            )}
+            <Link href={`/event/${kegiatan[3].slug}`}>
+              {kegiatan[3] && (
+                <Image
+                  height={580}
+                  width={580}
+                  src={kegiatan[3].logo}
+                  alt={kegiatan[3].title}
+                  className="w-full h-full object-contain"
+                />
+              )}
+            </Link>
           </Circle>
         </div>
       </div>

@@ -6,6 +6,8 @@ import Lanyard from "./Lanyard";
 import SplitText from "./SplitText";
 import { AuroraText } from "./ui/aurora-text";
 import { TypingAnimation } from "./ui/typing-animation";
+import { motion } from "framer-motion";
+
 export interface BentoCardProps {
   color?: string;
   title?: string;
@@ -64,11 +66,11 @@ const cardData: BentoCardProps[] = [
     title: "Co-Create or Compete",
     description: "Seminar VALTER 2025",
     children: (
-      <div className="absolut lg:scale-80 scale-95 top-0 right-2 flex justify-start items-center flex-col h-full w-full  border-none [mask-image:linear-gradient(to_top,transparent_10%,#000000_20%)] transition-all duration-300 ease-out group-hover:scale-90">
+      <div className="absolute scale-80 top-0 right-2  h-full w-full  border-none [mask-image:linear-gradient(to_top,transparent_10%,#000000_50%)] transition-all duration-300 ease-out group-hover:scale-90">
         <TypingAnimation
           startOnView
-          typeSpeed={30}
-          className="font-semibold xl:text-2xl lg:text-lg text-sm"
+          typeSpeed={12}
+          className="font-light  xl:text-2xl lg:text-lg text-sm"
           loop={false}
         >
           Seminar VALTER 2025 hadir sebagai acara puncak dari Festival
@@ -80,6 +82,15 @@ const cardData: BentoCardProps[] = [
           teknologi, dan AI dapat berjalan berdampingan, sekaligus menjadi
           tantangan di era digital dan content creation
         </TypingAnimation>
+        <motion.a
+          href={`/seminar`}
+          rel="noopener noreferrer"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="flex items-center mt-2 justify-center gap-2 w-full bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-700 hover:to-fuchsia-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 shadow-lg shadow-purple-500/50 hover:shadow-purple-500/75"
+        >
+          Lihat Selengkapnya
+        </motion.a>
       </div>
     ),
   },
@@ -88,7 +99,16 @@ const cardData: BentoCardProps[] = [
     title: "Guest Star",
     description: "Work together seamlessly",
     children: (
-      <div className="absolute top-0 right-2  h-full w-full  border-none [mask-image:linear-gradient(to_top,transparent_10%,#000000_100%)] transition-all duration-300 ease-out group-hover:scale-90">
+      <div
+        className="absolute top-0 right-2 h-full w-full border-none [mask-image:linear-gradient(to_top,transparent_10%,#000000_100%)] transition-all duration-300 ease-out group-hover:scale-90"
+        onTouchStart={(e) => {
+          e.stopPropagation();
+        }}
+        onTouchMove={(e) => {
+          e.stopPropagation();
+        }}
+        style={{ touchAction: "none" }}
+      >
         <Lanyard position={[0, 0, 12]} gravity={[0, -40, 0]} />
       </div>
     ),
