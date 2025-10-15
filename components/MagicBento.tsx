@@ -37,6 +37,14 @@ const DEFAULT_SPOTLIGHT_RADIUS = 300;
 const DEFAULT_GLOW_COLOR = "132, 0, 255";
 const MOBILE_BREAKPOINT = 768;
 
+const getLanyardPosition = (): [number, number, number] => {
+  const width = typeof window !== "undefined" ? window.innerWidth : 1024;
+
+  if (width < 600) return [0, 0, 13];
+  if (width < 1024) return [0, 0, 12];
+  return [0, 0, 15];
+};
+
 const cardData: BentoCardProps[] = [
   {
     color: "#060010",
@@ -100,7 +108,7 @@ const cardData: BentoCardProps[] = [
     description: "Work together seamlessly",
     children: (
       <div
-        className="absolute top-0 right-2 h-full w-full border-none [mask-image:linear-gradient(to_top,transparent_10%,#000000_100%)] transition-all duration-300 ease-out group-hover:scale-90"
+        className="absolute top-0 right-2 h-11/12 lg:h-full w-full border-none [mask-image:linear-gradient(to_top,transparent_10%,#000000_100%)] transition-all duration-300 ease-out group-hover:scale-90"
         onTouchStart={(e) => {
           e.stopPropagation();
         }}
@@ -109,7 +117,7 @@ const cardData: BentoCardProps[] = [
         }}
         style={{ touchAction: "none" }}
       >
-        <Lanyard position={[0, 0, 12]} gravity={[0, -40, 0]} />
+        <Lanyard position={getLanyardPosition()} gravity={[0, -40, 0]} />
       </div>
     ),
   },
@@ -658,7 +666,7 @@ const MagicBento: React.FC<BentoProps> = ({
                 <div className="card__content ">
                   <h2 className="card__title">
                     <AuroraText
-                      className="md:text-4xl text-3xl"
+                      className="md:text-4xl text-2xl"
                       speed={1}
                       colors={[
                         "oklch(49.1% 0.27 292.581)",

@@ -102,9 +102,9 @@ const MediaPartner = () => {
           </Marquee>
         )}
 
-        <div className="pointer-events-none absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-zinc-950 via-zinc-950/80 to-transparent z-10" />
+        <div className="pointer-events-none absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-gray-950 via-gray-950/80 to-transparent z-10" />
 
-        <div className="pointer-events-none absolute inset-y-0 right-0 w-1/3 bg-gradient-to-l from-zinc-950 via-zinc-950/80 to-transparent z-10" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-1/3 bg-gradient-to-l from-gray-950 via-gray-950/80 to-transparent z-10" />
       </div>
     </>
   );

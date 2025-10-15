@@ -48,7 +48,9 @@ function createTextTexture(
   color: string = "black"
 ): { texture: Texture; width: number; height: number } {
   const canvas = document.createElement("canvas");
-  const context = canvas.getContext("2d");
+  const context = canvas.getContext("2d", {
+    willReadFrequently: false, // Optimize canvas
+  });
   if (!context) throw new Error("Could not get 2d context");
 
   context.font = font;
@@ -67,7 +69,11 @@ function createTextTexture(
   context.clearRect(0, 0, canvas.width, canvas.height);
   context.fillText(text, canvas.width / 2, canvas.height / 2);
 
-  const texture = new Texture(gl, { generateMipmaps: false });
+  const texture = new Texture(gl, {
+    generateMipmaps: false,
+    minFilter: gl.LINEAR,
+    magFilter: gl.LINEAR,
+  });
   texture.image = canvas;
   return { texture, width: canvas.width, height: canvas.height };
 }
@@ -115,9 +121,14 @@ class Title {
       this.font,
       this.textColor
     );
-    const geometry = new Plane(this.gl);
+    const geometry = new Plane(this.gl, {
+      widthSegments: 1,
+      heightSegments: 1,
+    });
+
     const program = new Program(this.gl, {
       vertex: `
+        precision mediump float;
         attribute vec3 position;
         attribute vec2 uv;
         uniform mat4 modelViewMatrix;
@@ -129,7 +140,7 @@ class Title {
         }
       `,
       fragment: `
-        precision highp float;
+        precision mediump float;
         uniform sampler2D tMap;
         varying vec2 vUv;
         void main() {
@@ -140,7 +151,10 @@ class Title {
       `,
       uniforms: { tMap: { value: texture } },
       transparent: true,
+      depthTest: false,
+      depthWrite: false,
     });
+
     this.mesh = new Mesh(this.gl, { geometry, program });
     const aspect = width / height;
     const textHeightScaled = this.plane.scale.y * 0.15;
@@ -208,6 +222,7 @@ class Media {
   speed: number = 0;
   isBefore: boolean = false;
   isAfter: boolean = false;
+  isVisible: boolean = true;
 
   constructor({
     geometry,
@@ -248,131 +263,149 @@ class Media {
   createShader() {
     const texture = new Texture(this.gl, {
       generateMipmaps: true,
+      minFilter: this.gl.LINEAR_MIPMAP_LINEAR,
+      magFilter: this.gl.LINEAR,
     });
 
+    // Simplified skeleton shader - no animation
     this.skeletonProgram = new Program(this.gl, {
       depthTest: false,
       depthWrite: false,
       vertex: `
-      precision highp float;
-      attribute vec3 position;
-      attribute vec2 uv;
-      uniform mat4 modelViewMatrix;
-      uniform mat4 projectionMatrix;
-      uniform float uTime;
-      varying vec2 vUv;
-      void main() {
-        vUv = uv;
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-      }
-    `,
+        precision mediump float;
+        attribute vec3 position;
+        attribute vec2 uv;
+        uniform mat4 modelViewMatrix;
+        uniform mat4 projectionMatrix;
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
       fragment: `
-      precision highp float;
-      uniform float uTime;
-      uniform float uBorderRadius;
-      varying vec2 vUv;
-      
-      float roundedBoxSDF(vec2 p, vec2 b, float r) {
-        vec2 d = abs(p) - b;
-        return length(max(d, vec2(0.0))) + min(max(d.x, d.y), 0.0) - r;
-      }
-      
-      void main() {
-        // Skeleton shimmer effect
-        float shimmer = sin(vUv.x * 3.0 + uTime * 2.0) * 0.5 + 0.5;
-        vec3 color = mix(vec3(0.15), vec3(0.25), shimmer);
+        precision mediump float;
+        uniform float uBorderRadius;
+        varying vec2 vUv;
         
-        float d = roundedBoxSDF(vUv - 0.5, vec2(0.5 - uBorderRadius), uBorderRadius);
-        float edgeSmooth = 0.002;
-        float alpha = 1.0 - smoothstep(-edgeSmooth, edgeSmooth, d);
+        float roundedBoxSDF(vec2 p, vec2 b, float r) {
+          vec2 d = abs(p) - b;
+          return length(max(d, vec2(0.0))) + min(max(d.x, d.y), 0.0) - r;
+        }
         
-        gl_FragColor = vec4(color, alpha);
-      }
-    `,
+        void main() {
+          vec3 color = vec3(0.15);
+          float d = roundedBoxSDF(vUv - 0.5, vec2(0.5 - uBorderRadius), uBorderRadius);
+          float alpha = 1.0 - smoothstep(-0.002, 0.002, d);
+          gl_FragColor = vec4(color, alpha);
+        }
+      `,
       uniforms: {
-        uTime: { value: 0 },
         uBorderRadius: { value: this.borderRadius },
       },
       transparent: true,
     });
 
+    // Optimized main shader - reduced calculations
     this.program = new Program(this.gl, {
       depthTest: false,
       depthWrite: false,
       vertex: `
-      precision highp float;
-      attribute vec3 position;
-      attribute vec2 uv;
-      uniform mat4 modelViewMatrix;
-      uniform mat4 projectionMatrix;
-      uniform float uTime;
-      uniform float uSpeed;
-      varying vec2 vUv;
-      void main() {
-        vUv = uv;
-        vec3 p = position;
-        p.z = (sin(p.x * 4.0 + uTime) * 1.5 + cos(p.y * 2.0 + uTime) * 1.5) * (0.1 + uSpeed * 0.5);
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
-      }
-    `,
+        precision mediump float;
+        attribute vec3 position;
+        attribute vec2 uv;
+        uniform mat4 modelViewMatrix;
+        uniform mat4 projectionMatrix;
+        uniform float uSpeed;
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          vec3 p = position;
+          // Simplified wave - only when moving fast
+          if (abs(uSpeed) > 0.01) {
+            p.z = sin(p.x * 3.0) * uSpeed * 0.3;
+          }
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+        }
+      `,
       fragment: `
-      precision highp float;
-      uniform vec2 uImageSizes;
-      uniform vec2 uPlaneSizes;
-      uniform sampler2D tMap;
-      uniform float uBorderRadius;
-      varying vec2 vUv;
-      
-      float roundedBoxSDF(vec2 p, vec2 b, float r) {
-        vec2 d = abs(p) - b;
-        return length(max(d, vec2(0.0))) + min(max(d.x, d.y), 0.0) - r;
-      }
-      
-      void main() {
-        vec2 ratio = vec2(
-          min((uPlaneSizes.x / uPlaneSizes.y) / (uImageSizes.x / uImageSizes.y), 1.0),
-          min((uPlaneSizes.y / uPlaneSizes.x) / (uImageSizes.y / uImageSizes.x), 1.0)
-        );
-        vec2 uv = vec2(
-          vUv.x * ratio.x + (1.0 - ratio.x) * 0.5,
-          vUv.y * ratio.y + (1.0 - ratio.y) * 0.5
-        );
-        vec4 color = texture2D(tMap, uv);
+        precision mediump float;
+        uniform vec2 uImageSizes;
+        uniform vec2 uPlaneSizes;
+        uniform sampler2D tMap;
+        uniform float uBorderRadius;
+        varying vec2 vUv;
         
-        float d = roundedBoxSDF(vUv - 0.5, vec2(0.5 - uBorderRadius), uBorderRadius);
-        float edgeSmooth = 0.002;
-        float alpha = 1.0 - smoothstep(-edgeSmooth, edgeSmooth, d);
+        float roundedBoxSDF(vec2 p, vec2 b, float r) {
+          vec2 d = abs(p) - b;
+          return length(max(d, vec2(0.0))) + min(max(d.x, d.y), 0.0) - r;
+        }
         
-        gl_FragColor = vec4(color.rgb, alpha);
-      }
-    `,
+        void main() {
+          vec2 ratio = vec2(
+            min((uPlaneSizes.x / uPlaneSizes.y) / (uImageSizes.x / uImageSizes.y), 1.0),
+            min((uPlaneSizes.y / uPlaneSizes.x) / (uImageSizes.y / uImageSizes.x), 1.0)
+          );
+          vec2 uv = vec2(
+            vUv.x * ratio.x + (1.0 - ratio.x) * 0.5,
+            vUv.y * ratio.y + (1.0 - ratio.y) * 0.5
+          );
+          vec4 color = texture2D(tMap, uv);
+          
+          float d = roundedBoxSDF(vUv - 0.5, vec2(0.5 - uBorderRadius), uBorderRadius);
+          float alpha = 1.0 - smoothstep(-0.002, 0.002, d);
+          
+          gl_FragColor = vec4(color.rgb, alpha);
+        }
+      `,
       uniforms: {
         tMap: { value: texture },
         uPlaneSizes: { value: [0, 0] },
         uImageSizes: { value: [0, 0] },
         uSpeed: { value: 0 },
-        uTime: { value: 100 * Math.random() },
         uBorderRadius: { value: this.borderRadius },
       },
       transparent: true,
     });
 
+    // Lazy load images
     const img = new Image();
     img.crossOrigin = "anonymous";
-    img.src = this.image;
+    img.loading = "lazy";
 
     img.onload = () => {
-      texture.image = img;
-      this.program.uniforms.uImageSizes.value = [
-        img.naturalWidth,
-        img.naturalHeight,
-      ];
+      // Resize image if too large
+      const maxSize = 1024;
+      let width = img.naturalWidth;
+      let height = img.naturalHeight;
+
+      if (width > maxSize || height > maxSize) {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+
+        if (width > height) {
+          canvas.width = maxSize;
+          canvas.height = (height * maxSize) / width;
+        } else {
+          canvas.height = maxSize;
+          canvas.width = (width * maxSize) / height;
+        }
+
+        ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+        texture.image = canvas;
+        width = canvas.width;
+        height = canvas.height;
+      } else {
+        texture.image = img;
+      }
+
+      this.program.uniforms.uImageSizes.value = [width, height];
       this.isLoaded = true;
-
       this.plane.program = this.program;
-
       this.onResize();
     };
+
+    img.src = this.image;
   }
 
   createMesh() {
@@ -398,14 +431,36 @@ class Media {
     scroll: { current: number; last: number },
     direction: "right" | "left"
   ) {
-    if (!this.isLoaded && this.skeletonProgram) {
-      this.skeletonProgram.uniforms.uTime.value += 0.04;
-    }
     this.plane.position.x = this.x - scroll.current - this.extra;
-
     const x = this.plane.position.x;
     const H = this.viewport.width / 2;
 
+    // Frustum culling - hide planes outside viewport
+    const planeOffset = this.plane.scale.x / 2;
+    const viewportOffset = this.viewport.width / 2 + this.plane.scale.x;
+    this.isVisible =
+      this.plane.position.x + planeOffset > -viewportOffset &&
+      this.plane.position.x - planeOffset < viewportOffset;
+
+    this.plane.visible = this.isVisible;
+
+    if (!this.isVisible) {
+      // Skip expensive calculations for invisible planes
+      this.isBefore = this.plane.position.x + planeOffset < -viewportOffset;
+      this.isAfter = this.plane.position.x - planeOffset > viewportOffset;
+
+      if (direction === "right" && this.isBefore) {
+        this.extra -= this.widthTotal;
+        this.isBefore = this.isAfter = false;
+      }
+      if (direction === "left" && this.isAfter) {
+        this.extra += this.widthTotal;
+        this.isBefore = this.isAfter = false;
+      }
+      return;
+    }
+
+    // Bend calculation
     if (this.bend === 0) {
       this.plane.position.y = 0;
       this.plane.rotation.z = 0;
@@ -413,7 +468,6 @@ class Media {
       const B_abs = Math.abs(this.bend);
       const R = (H * H + B_abs * B_abs) / (2 * B_abs);
       const effectiveX = Math.min(Math.abs(x), H);
-
       const arc = R - Math.sqrt(R * R - effectiveX * effectiveX);
       if (this.bend > 0) {
         this.plane.position.y = -arc;
@@ -425,13 +479,21 @@ class Media {
     }
 
     this.speed = scroll.current - scroll.last;
-    this.program.uniforms.uTime.value += 0.04;
-    this.program.uniforms.uSpeed.value = this.speed;
 
-    const planeOffset = this.plane.scale.x / 2;
-    const viewportOffset = this.viewport.width / 2;
-    this.isBefore = this.plane.position.x + planeOffset < -viewportOffset;
-    this.isAfter = this.plane.position.x - planeOffset > viewportOffset;
+    // Only update speed uniform if loaded and moving significantly
+    if (this.isLoaded && Math.abs(this.speed) > 0.005) {
+      this.program.uniforms.uSpeed.value = this.speed;
+    } else if (this.isLoaded) {
+      this.program.uniforms.uSpeed.value *= 0.9;
+    }
+
+    const planeOffsetCheck = this.plane.scale.x / 2;
+    const viewportOffsetCheck = this.viewport.width / 2;
+    this.isBefore =
+      this.plane.position.x + planeOffsetCheck < -viewportOffsetCheck;
+    this.isAfter =
+      this.plane.position.x - planeOffsetCheck > viewportOffsetCheck;
+
     if (direction === "right" && this.isBefore) {
       this.extra -= this.widthTotal;
       this.isBefore = this.isAfter = false;
@@ -495,6 +557,9 @@ interface AppConfig {
 }
 
 class App {
+  isAnimating: boolean = false;
+  lastInteraction: number = 0;
+  idleThreshold: number = 3000; // Increased idle threshold
   container: HTMLElement;
   scrollSpeed: number;
   scroll: {
@@ -534,7 +599,7 @@ class App {
       borderRadius = 0,
       font = "bold 30px Figtree",
       scrollSpeed = 2,
-      scrollEase = 0.05,
+      scrollEase = 0.075, // Slightly higher ease for smoother stop
     }: AppConfig
   ) {
     document.documentElement.classList.remove("no-js");
@@ -548,15 +613,19 @@ class App {
     this.onResize();
     this.createGeometry();
     this.createMedias(items, bend, textColor, borderRadius, font);
-    this.update();
     this.addEventListeners();
+
+    // Start with one render
+    this.update();
   }
 
   createRenderer() {
+    // CRITICAL: Lower DPR for better performance
     this.renderer = new Renderer({
       alpha: true,
-      antialias: true,
-      dpr: Math.min(window.devicePixelRatio || 1, 2),
+      antialias: false,
+      dpr: Math.min(window.devicePixelRatio || 1, 1.2), // Lowered from 1.5
+      powerPreference: "high-performance",
     });
     this.gl = this.renderer.gl;
     this.gl.clearColor(0, 0, 0, 0);
@@ -574,9 +643,10 @@ class App {
   }
 
   createGeometry() {
+    // CRITICAL: Reduced segments dramatically
     this.planeGeometry = new Plane(this.gl, {
-      heightSegments: 50,
-      widthSegments: 100,
+      heightSegments: 20, // Was 50 - reduced by 60%
+      widthSegments: 30, // Was 100 - reduced by 70%
     });
   }
 
@@ -606,7 +676,7 @@ class App {
       },
       {
         image: `/assets/posters/posterVidCamp.png`,
-        text: "Video Campign",
+        text: "Video Campaign",
       },
       {
         image: `/assets/posters/posterWebDes.png`,
@@ -639,6 +709,7 @@ class App {
     this.isDown = true;
     this.scroll.position = this.scroll.current;
     this.start = "touches" in e ? e.touches[0].clientX : e.clientX;
+    this.startAnimating();
   }
 
   onTouchMove(e: MouseEvent | TouchEvent) {
@@ -646,6 +717,7 @@ class App {
     const x = "touches" in e ? e.touches[0].clientX : e.clientX;
     const distance = (this.start - x) * (this.scrollSpeed * 0.025);
     this.scroll.target = (this.scroll.position ?? 0) + distance;
+    this.startAnimating();
   }
 
   onTouchUp() {
@@ -662,6 +734,7 @@ class App {
     this.scroll.target +=
       (delta > 0 ? this.scrollSpeed : -this.scrollSpeed) * 0.2;
     this.onCheckDebounce();
+    this.startAnimating();
   }
 
   onCheck() {
@@ -693,35 +766,71 @@ class App {
   }
 
   update() {
+    const now = performance.now();
+    const timeSinceInteraction = now - this.lastInteraction;
+    const delta = Math.abs(this.scroll.target - this.scroll.current);
+
+    // Stop animating when idle and settled
+    if (timeSinceInteraction > this.idleThreshold && delta < 0.01) {
+      this.isAnimating = false;
+      this.scroll.current = this.scroll.target; // Snap to target
+      return;
+    }
+
     this.scroll.current = lerp(
       this.scroll.current,
       this.scroll.target,
       this.scroll.ease
     );
+
     const direction = this.scroll.current > this.scroll.last ? "right" : "left";
+
     if (this.medias) {
       this.medias.forEach((media) => media.update(this.scroll, direction));
     }
+
     this.renderer.render({ scene: this.scene, camera: this.camera });
     this.scroll.last = this.scroll.current;
+
+    if (this.isAnimating) {
+      this.raf = window.requestAnimationFrame(this.update.bind(this));
+    }
+  }
+
+  startAnimating() {
+    if (this.isAnimating) {
+      this.lastInteraction = performance.now();
+      return;
+    }
+    this.isAnimating = true;
+    this.lastInteraction = performance.now();
     this.raf = window.requestAnimationFrame(this.update.bind(this));
   }
 
   addEventListeners() {
-    this.boundOnResize = this.onResize.bind(this);
+    this.boundOnResize = debounce(this.onResize.bind(this), 150); // Debounced resize
     this.boundOnWheel = this.onWheel.bind(this);
     this.boundOnTouchDown = this.onTouchDown.bind(this);
     this.boundOnTouchMove = this.onTouchMove.bind(this);
     this.boundOnTouchUp = this.onTouchUp.bind(this);
+
     window.addEventListener("resize", this.boundOnResize);
-    window.addEventListener("mousewheel", this.boundOnWheel);
-    window.addEventListener("wheel", this.boundOnWheel);
-    window.addEventListener("mousedown", this.boundOnTouchDown);
-    window.addEventListener("mousemove", this.boundOnTouchMove);
-    window.addEventListener("mouseup", this.boundOnTouchUp);
-    window.addEventListener("touchstart", this.boundOnTouchDown);
-    window.addEventListener("touchmove", this.boundOnTouchMove);
-    window.addEventListener("touchend", this.boundOnTouchUp);
+    window.addEventListener("mousewheel", this.boundOnWheel, { passive: true });
+    window.addEventListener("wheel", this.boundOnWheel, { passive: true });
+    window.addEventListener("mousedown", this.boundOnTouchDown, {
+      passive: true,
+    });
+    window.addEventListener("mousemove", this.boundOnTouchMove, {
+      passive: true,
+    });
+    window.addEventListener("mouseup", this.boundOnTouchUp, { passive: true });
+    window.addEventListener("touchstart", this.boundOnTouchDown, {
+      passive: true,
+    });
+    window.addEventListener("touchmove", this.boundOnTouchMove, {
+      passive: true,
+    });
+    window.addEventListener("touchend", this.boundOnTouchUp, { passive: true });
   }
 
   destroy() {
@@ -735,6 +844,23 @@ class App {
     window.removeEventListener("touchstart", this.boundOnTouchDown);
     window.removeEventListener("touchmove", this.boundOnTouchMove);
     window.removeEventListener("touchend", this.boundOnTouchUp);
+
+    // Clean up WebGL resources
+    if (this.medias) {
+      this.medias.forEach((media) => {
+        if (media.plane.geometry) {
+          media.plane.geometry.remove();
+        }
+        if (media.plane.program) {
+          media.plane.program.remove();
+        }
+      });
+    }
+
+    if (this.planeGeometry) {
+      this.planeGeometry.remove();
+    }
+
     if (
       this.renderer &&
       this.renderer.gl &&
@@ -764,11 +890,14 @@ export default function CircularGallery({
   borderRadius = 0.05,
   font = "bold 30px Figtree",
   scrollSpeed = 2,
-  scrollEase = 0.05,
+  scrollEase = 0.075,
 }: CircularGalleryProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const appRef = useRef<App | null>(null);
+
   useEffect(() => {
     if (!containerRef.current) return;
+
     const app = new App(containerRef.current, {
       items,
       bend,
@@ -778,9 +907,14 @@ export default function CircularGallery({
       scrollSpeed,
       scrollEase,
     });
+
+    appRef.current = app;
+
     return () => {
       app.destroy();
+      appRef.current = null;
     };
   }, [items, bend, textColor, borderRadius, font, scrollSpeed, scrollEase]);
+
   return <div className="circular-gallery" ref={containerRef} />;
 }

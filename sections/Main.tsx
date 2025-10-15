@@ -1,6 +1,5 @@
 import CountdownCards from "@/components/CountdownCards";
 import DarkVeil from "@/components/DarkVeil";
-
 import { AnimatedGradientText } from "@/components/ui/animated-gradient-text";
 import { AuroraText } from "@/components/ui/aurora-text";
 import { cn } from "@/lib/utils";
@@ -10,15 +9,27 @@ import Link from "next/link";
 const Main = () => {
   return (
     <>
-      <div style={{ width: "100%", height: "100svh", position: "absolute" }}>
+      <div
+        style={{
+          position: "absolute",
+          width: "100%",
+          height: "100svh",
+          top: 0,
+          left: 0,
+          zIndex: 0,
+          pointerEvents: "none",
+        }}
+      >
         <DarkVeil hueShift={340} />
       </div>
-      <div className="w-full backdrop-blur-lg relative">
-        <div className="md:px-36 ">
-          <div className="font-sans bg-transparent relative flex flex-col justify-evenly pt-7 items-center min-h-screen ">
+
+      <div className="w-full backdrop-blur-lg relative ">
+        <div className="md:px-36">
+          <div className="font-sans bg-transparent relative flex flex-col justify-evenly pt-7 items-center min-h-screen">
             <Link
               href={"#kegiatan"}
-              className="group backdrop-blur-3xl bg-white/20 relative mx-auto flex items-center justify-center  rounded-full px-4 py-1.5 shadow-[inset_0_-8px_10px_#8fdfff1f] transition-shadow duration-500 ease-out hover:shadow-[inset_0_-5px_10px_#8fdfff3f]"
+              className="group backdrop-blur-3xl bg-white/20 relative mx-auto flex items-center justify-center rounded-full px-4 py-1.5 shadow-[inset_0_-8px_10px_#8fdfff1f] transition-shadow duration-500 ease-out hover:shadow-[inset_0_-5px_10px_#8fdfff3f]"
+              style={{ willChange: "transform" }}
             >
               <span
                 className={cn(
@@ -31,6 +42,7 @@ const Main = () => {
                   mask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
                   maskComposite: "subtract",
                   WebkitClipPath: "padding-box",
+                  willChange: "background-position",
                 }}
               />
               🎉 <hr className="mx-2 h-4 w-px shrink-0 bg-neutral-500" />
@@ -42,7 +54,7 @@ const Main = () => {
 
             <main className="flex justify-center text-center items-center w-full">
               <div className="flex flex-col text-white">
-                <h1 className="text-4xl bg-clip-text text-transparent bg-gradient-to-b from-white via-white/50 to-zinc-600 font-medium font-funky tracking-tighte lg:text-7xl">
+                <h1 className="text-4xl bg-clip-text text-transparent bg-gradient-to-b from-white via-white/50 to-zinc-600 font-medium font-funky tracking-tight lg:text-7xl">
                   Valter 2025
                 </h1>
                 <AuroraText
@@ -58,13 +70,15 @@ const Main = () => {
                   Creative Synergy
                 </AuroraText>
                 <p className="leading-relaxed text-white font-extralight text-sm md:text-xl md:p-0 p-1">
-                  Kreativitas Berdaya Bersama {""}Teknologi - Imajinasi Ciptakan
+                  Kreativitas Berdaya Bersama Teknologi - Imajinasi Ciptakan
                   Inovasi
                 </p>
               </div>
             </main>
 
-            <CountdownCards />
+            <div style={{ minHeight: "120px" }}>
+              <CountdownCards />
+            </div>
           </div>
         </div>
       </div>

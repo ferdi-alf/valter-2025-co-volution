@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { AnimatePresence } from "framer-motion";
 import { LogoIntro } from "./LogoIntro";
 import Navbar from "./Navbar";
@@ -14,25 +14,26 @@ export default function AppWrapper({
   const [showNavbar, setShowNavbar] = useState(false);
   const [showContent, setShowContent] = useState(false);
 
+  const handleIntroComplete = useCallback(() => {
+    setShowIntro(false);
+  }, []);
+
   useEffect(() => {
-    // Navbar muncul sebelum logo sampai
+    const contentPreloadTimer = setTimeout(() => {
+      requestAnimationFrame(() => {
+        setShowContent(true);
+      });
+    }, 1200);
+
     const navbarTimer = setTimeout(() => {
       setShowNavbar(true);
-    }, 1500);
-
-    const contentTimer = setTimeout(() => {
-      setShowContent(true);
-    }, 1600);
+    }, 1400);
 
     return () => {
       clearTimeout(navbarTimer);
-      clearTimeout(contentTimer);
+      clearTimeout(contentPreloadTimer);
     };
   }, []);
-
-  const handleIntroComplete = () => {
-    setShowIntro(false);
-  };
 
   return (
     <>

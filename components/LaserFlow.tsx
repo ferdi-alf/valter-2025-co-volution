@@ -1,5 +1,6 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useCallback } from "react";
 import * as THREE from "three";
 import "./LaserFlow.css";
 
@@ -64,7 +65,6 @@ uniform float uFogFallSpeed;
 uniform vec3 uColor;
 uniform float uFade;
 
-// Core beam/flare shaping and dynamics
 #define PI 3.14159265359
 #define TWO_PI 6.28318530718
 #define EPS 1e-6
@@ -80,8 +80,6 @@ uniform float uFade;
 #define TOP_FADE_EXP 1.0
 #define FLOW_PERIOD 0.5
 #define FLOW_SHARPNESS 1.5
-
-// Wisps (animated micro-streaks) that travel along the beam
 #define W_BASE_X 1.5
 #define W_LAYER_GAP 0.25
 #define W_LANES 10
@@ -94,8 +92,6 @@ uniform float uFade;
 #define W_CURVE_AMOUNT 15.0
 #define W_CURVE_RANGE (FLARE_HEIGHT - 3.0)
 #define W_BOTTOM_EXP 10.0
-
-// Volumetric fog controls
 #define FOG_ON 1
 #define FOG_CONTRAST 1.2
 #define FOG_SPEED_U 0.1
@@ -111,15 +107,11 @@ uniform float uFade;
 #define FOG_MASK_GAMMA 0.5
 #define FOG_EXPAND_SHAPE 12.2
 #define FOG_EDGE_MIX 0.5
-
-// Horizontal vignette for the fog volume
 #define HFOG_EDGE_START 0.20
 #define HFOG_EDGE_END 0.98
 #define HFOG_EDGE_GAMMA 1.4
 #define HFOG_Y_RADIUS 25.0
 #define HFOG_Y_SOFT 60.0
-
-// Beam extents and edge masking
 #define EDGE_X0 0.22
 #define EDGE_X1 0.995
 #define EDGE_X_GAMMA 1.25
@@ -156,7 +148,7 @@ uniform float uFade;
     float vWisps(vec2 uv,float topF){
     float y=uv.y,yf=(y+uFlowTime*uWSpeed)/W_CELL;
     float dRaw=clamp(uWispDensity,0.0,2.0),d=dRaw<=0.0?1.0:dRaw;
-    float lanesF=floor(float(W_LANES)*min(d,1.0)+0.5); // WebGL1-safe
+    float lanesF=floor(float(W_LANES)*min(d,1.0)+0.5);
     int lanes=int(max(1.0,lanesF));
     float sp=min(d,1.0),ep=max(d-1.0,0.0);
     float fm=flareY(max(y,0.0)),rm=clamp(1.0-(y/max(W_CURVE_RANGE,EPS)),0.0,1.0),cm=fm*rm;
@@ -287,17 +279,22 @@ export const LaserFlow: React.FC<Props> = ({
   const mountRef = useRef<HTMLDivElement | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const uniformsRef = useRef<any>(null);
+  const sceneRef = useRef<THREE.Scene | null>(null);
+  const cameraRef = useRef<THREE.OrthographicCamera | null>(null);
+  const clockRef = useRef<THREE.Clock | null>(null);
+  const rafRef = useRef<number>(0);
+  const prevTimeRef = useRef<number>(0);
+  const fadeRef = useRef<number>(0);
   const hasFadedRef = useRef(false);
   const rectRef = useRef<DOMRect | null>(null);
   const baseDprRef = useRef<number>(1);
   const currentDprRef = useRef<number>(1);
-  const fpsSamplesRef = useRef<number[]>([]);
-  const lastFpsCheckRef = useRef<number>(performance.now());
-  const emaDtRef = useRef<number>(16.7); // ms
-  const pausedRef = useRef<boolean>(false);
   const inViewRef = useRef<boolean>(true);
+  const mouseTargetRef = useRef<THREE.Vector2>(new THREE.Vector2(0, 0));
+  const mouseSmoothRef = useRef<THREE.Vector2>(new THREE.Vector2(0, 0));
+  const resizeTimeoutRef = useRef<number>(0);
 
-  const hexToRGB = (hex: string) => {
+  const hexToRGB = useCallback((hex: string) => {
     let c = hex.trim();
     if (c[0] === "#") c = c.slice(1);
     if (c.length === 3)
@@ -311,10 +308,29 @@ export const LaserFlow: React.FC<Props> = ({
       g: ((n >> 8) & 255) / 255,
       b: (n & 255) / 255,
     };
-  };
+  }, []);
+
+  const setSizeNow = useCallback(() => {
+    const mount = mountRef.current;
+    const renderer = rendererRef.current;
+    const uniforms = uniformsRef.current;
+    if (!mount || !renderer || !uniforms) return;
+
+    const w = mount.clientWidth || 1;
+    const h = mount.clientHeight || 1;
+    const pr = currentDprRef.current;
+
+    renderer.setSize(w, h, false);
+    uniforms.iResolution.value.set(w * pr, h * pr, pr);
+
+    const canvas = renderer.domElement;
+    rectRef.current = canvas.getBoundingClientRect();
+  }, []);
 
   useEffect(() => {
-    const mount = mountRef.current!;
+    const mount = mountRef.current;
+    if (!mount) return;
+
     const renderer = new THREE.WebGLRenderer({
       antialias: false,
       alpha: false,
@@ -324,25 +340,29 @@ export const LaserFlow: React.FC<Props> = ({
       premultipliedAlpha: false,
       preserveDrawingBuffer: false,
       failIfMajorPerformanceCaveat: false,
-      logarithmicDepthBuffer: false,
     });
     rendererRef.current = renderer;
 
-    baseDprRef.current = Math.min(dpr ?? (window.devicePixelRatio || 1), 2);
+    baseDprRef.current = Math.min(dpr ?? (window.devicePixelRatio || 1), 1.5);
     currentDprRef.current = baseDprRef.current;
-
     renderer.setPixelRatio(currentDprRef.current);
+
     renderer.shadowMap.enabled = false;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.setClearColor(0x000000, 1);
+
     const canvas = renderer.domElement;
     canvas.style.width = "100%";
     canvas.style.height = "100%";
     canvas.style.display = "block";
     mount.appendChild(canvas);
 
+    // Setup scene
     const scene = new THREE.Scene();
+    sceneRef.current = scene;
+
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    cameraRef.current = camera;
 
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute(
@@ -375,7 +395,7 @@ export const LaserFlow: React.FC<Props> = ({
       uFalloffStart: { value: falloffStart },
       uFogFallSpeed: { value: fogFallSpeed },
       uColor: { value: new THREE.Vector3(1, 1, 1) },
-      uFade: { value: hasFadedRef.current ? 1 : 0 },
+      uFade: { value: 0 },
     };
     uniformsRef.current = uniforms;
 
@@ -394,44 +414,25 @@ export const LaserFlow: React.FC<Props> = ({
     scene.add(mesh);
 
     const clock = new THREE.Clock();
-    let prevTime = 0;
-    let fade = hasFadedRef.current ? 1 : 0;
-
-    const mouseTarget = new THREE.Vector2(0, 0);
-    const mouseSmooth = new THREE.Vector2(0, 0);
-
-    const setSizeNow = () => {
-      const w = mount.clientWidth || 1;
-      const h = mount.clientHeight || 1;
-      const pr = currentDprRef.current;
-      renderer.setPixelRatio(pr);
-      renderer.setSize(w, h, false);
-      uniforms.iResolution.value.set(w * pr, h * pr, pr);
-      rectRef.current = canvas.getBoundingClientRect();
-    };
-
-    let resizeRaf = 0;
-    const scheduleResize = () => {
-      if (resizeRaf) cancelAnimationFrame(resizeRaf);
-      resizeRaf = requestAnimationFrame(setSizeNow);
-    };
+    clockRef.current = clock;
 
     setSizeNow();
-    const ro = new ResizeObserver(scheduleResize);
+
+    const handleResize = () => {
+      if (resizeTimeoutRef.current) clearTimeout(resizeTimeoutRef.current);
+      resizeTimeoutRef.current = window.setTimeout(setSizeNow, 100);
+    };
+
+    const ro = new ResizeObserver(handleResize);
     ro.observe(mount);
 
     const io = new IntersectionObserver(
       (entries) => {
         inViewRef.current = entries[0]?.isIntersecting ?? true;
       },
-      { root: null, threshold: 0 }
+      { root: null, threshold: 0.01 }
     );
     io.observe(mount);
-
-    const onVis = () => {
-      pausedRef.current = document.hidden;
-    };
-    document.addEventListener("visibilitychange", onVis, { passive: true });
 
     const updateMouse = (clientX: number, clientY: number) => {
       const rect = rectRef.current;
@@ -440,120 +441,64 @@ export const LaserFlow: React.FC<Props> = ({
       const y = clientY - rect.top;
       const ratio = currentDprRef.current;
       const hb = rect.height * ratio;
-      mouseTarget.set(x * ratio, hb - y * ratio);
+      mouseTargetRef.current.set(x * ratio, hb - y * ratio);
     };
-    const onMove = (ev: PointerEvent | MouseEvent) =>
-      updateMouse(ev.clientX, ev.clientY);
-    const onLeave = () => mouseTarget.set(0, 0);
-    canvas.addEventListener("pointermove", onMove as any, { passive: true });
-    canvas.addEventListener("pointerdown", onMove as any, { passive: true });
-    canvas.addEventListener("pointerenter", onMove as any, { passive: true });
-    canvas.addEventListener("pointerleave", onLeave as any, { passive: true });
 
-    const onCtxLost = (e: Event) => {
-      e.preventDefault();
-      pausedRef.current = true;
-    };
-    const onCtxRestored = () => {
-      pausedRef.current = false;
-      scheduleResize();
-    };
-    canvas.addEventListener("webglcontextlost", onCtxLost, false);
-    canvas.addEventListener("webglcontextrestored", onCtxRestored, false);
+    const onMove = (ev: PointerEvent) => updateMouse(ev.clientX, ev.clientY);
+    const onLeave = () => mouseTargetRef.current.set(0, 0);
 
-    let raf = 0;
-
-    const clamp = (v: number, lo: number, hi: number) =>
-      Math.max(lo, Math.min(hi, v));
-    const dprFloor = 0.6;
-    const lowerThresh = 50;
-    const upperThresh = 58;
-
-    const adjustDprIfNeeded = (now: number) => {
-      const elapsed = now - lastFpsCheckRef.current;
-      if (elapsed < 750) return;
-
-      const samples = fpsSamplesRef.current;
-      if (samples.length === 0) {
-        lastFpsCheckRef.current = now;
-        return;
-      }
-      const avgFps = samples.reduce((a, b) => a + b, 0) / samples.length;
-
-      let next = currentDprRef.current;
-      const base = baseDprRef.current;
-
-      if (avgFps < lowerThresh) {
-        next = clamp(currentDprRef.current * 0.9, dprFloor, base);
-      } else if (avgFps > upperThresh && currentDprRef.current < base) {
-        next = clamp(currentDprRef.current * 1.05, dprFloor, base);
-      }
-
-      if (Math.abs(next - currentDprRef.current) > 0.01) {
-        currentDprRef.current = next;
-        setSizeNow();
-      }
-
-      fpsSamplesRef.current = [];
-      lastFpsCheckRef.current = now;
-    };
+    canvas.addEventListener("pointermove", onMove, { passive: true });
+    canvas.addEventListener("pointerleave", onLeave, { passive: true });
 
     const animate = () => {
-      raf = requestAnimationFrame(animate);
-      if (pausedRef.current || !inViewRef.current) return;
+      rafRef.current = requestAnimationFrame(animate);
+
+      if (!inViewRef.current || document.hidden) return;
 
       const t = clock.getElapsedTime();
-      const dt = Math.max(0, t - prevTime);
-      prevTime = t;
+      const dt = t - prevTimeRef.current;
+      prevTimeRef.current = t;
 
-      const dtMs = dt * 1000;
-      emaDtRef.current = emaDtRef.current * 0.9 + dtMs * 0.1;
-      const instFps = 1000 / Math.max(1, emaDtRef.current);
-      fpsSamplesRef.current.push(instFps);
+      const safeDt = Math.min(dt, 0.1);
 
       uniforms.iTime.value = t;
-
-      const cdt = Math.min(0.033, Math.max(0.001, dt));
-      (uniforms.uFlowTime.value as number) += cdt;
-      (uniforms.uFogTime.value as number) += cdt;
+      uniforms.uFlowTime.value += safeDt;
+      uniforms.uFogTime.value += safeDt;
 
       if (!hasFadedRef.current) {
-        const fadeDur = 1.0;
-        fade = Math.min(1, fade + cdt / fadeDur);
-        uniforms.uFade.value = fade;
-        if (fade >= 1) hasFadedRef.current = true;
+        fadeRef.current = Math.min(1, fadeRef.current + safeDt / 0.8);
+        uniforms.uFade.value = fadeRef.current;
+        if (fadeRef.current >= 1) hasFadedRef.current = true;
       }
 
-      const tau = Math.max(1e-3, mouseSmoothTime);
-      const alpha = 1 - Math.exp(-cdt / tau);
-      mouseSmooth.lerp(mouseTarget, alpha);
-      uniforms.iMouse.value.set(mouseSmooth.x, mouseSmooth.y, 0, 0);
+      const tau = Math.max(0.001, mouseSmoothTime);
+      const alpha = 1 - Math.exp(-safeDt / tau);
+      mouseSmoothRef.current.lerp(mouseTargetRef.current, alpha);
+      uniforms.iMouse.value.set(
+        mouseSmoothRef.current.x,
+        mouseSmoothRef.current.y,
+        0,
+        0
+      );
 
       renderer.render(scene, camera);
-
-      adjustDprIfNeeded(performance.now());
     };
 
     animate();
 
     return () => {
-      cancelAnimationFrame(raf);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      if (resizeTimeoutRef.current) clearTimeout(resizeTimeoutRef.current);
       ro.disconnect();
       io.disconnect();
-      document.removeEventListener("visibilitychange", onVis);
-      canvas.removeEventListener("pointermove", onMove as any);
-      canvas.removeEventListener("pointerdown", onMove as any);
-      canvas.removeEventListener("pointerenter", onMove as any);
-      canvas.removeEventListener("pointerleave", onLeave as any);
-      canvas.removeEventListener("webglcontextlost", onCtxLost);
-      canvas.removeEventListener("webglcontextrestored", onCtxRestored);
+      canvas.removeEventListener("pointermove", onMove);
+      canvas.removeEventListener("pointerleave", onLeave);
       geometry.dispose();
       material.dispose();
       renderer.dispose();
       if (mount.contains(canvas)) mount.removeChild(canvas);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dpr]);
+  }, [dpr, mouseSmoothTime, setSizeNow]);
 
   useEffect(() => {
     const uniforms = uniformsRef.current;
@@ -594,6 +539,7 @@ export const LaserFlow: React.FC<Props> = ({
     falloffStart,
     fogFallSpeed,
     color,
+    hexToRGB,
   ]);
 
   return (

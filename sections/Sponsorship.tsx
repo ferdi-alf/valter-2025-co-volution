@@ -87,7 +87,7 @@ const Sponsorship: React.FC = () => {
   };
 
   return (
-    <div className="relative py-20 px-4 md:px-8 overflow-hidden">
+    <div id="sponsor" className="relative py-20 px-4 md:px-8 overflow-hidden">
       <motion.div
         initial={{ opacity: 0, y: -30 }}
         animate={{ opacity: 1, y: 0 }}

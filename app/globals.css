@@ -10,8 +10,24 @@
 
 * {
   scroll-behavior: smooth;
-
   scroll-padding-top: 6rem;
+
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(120, 120, 120, 0.4);
+    border-radius: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(120, 120, 120, 0.6);
+  }
 }
 
 .font-funky {

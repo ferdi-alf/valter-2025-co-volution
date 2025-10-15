@@ -12,7 +12,7 @@ const About = () => {
         height={580}
         width={580}
         src={"/assets/tiva-face.png"}
-        className="md:w-32 w-24 absolute right-[-10px] md:right-[-30px] md:top-[-100px] top-[-80px]"
+        className="md:w-32 w-24 absolute right-[-10px] md:right-[-5px] md:top-[-105px] top-[-80px]"
         alt="tiva-face"
       />
       <div className="p-3 ">

@@ -23,7 +23,6 @@ export default function Features() {
 
     const lanyardArea = lanyardRef.current;
 
-    // Prevent scroll only when touching lanyard area
     const preventScroll = (e: TouchEvent) => {
       e.stopPropagation();
     };

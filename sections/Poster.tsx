@@ -23,12 +23,7 @@ const Poster = () => {
           className="[mask-image:linear-gradient(to_right,transparent_0%,#000000_15%,#000000_85%,transparent_100%)]"
           style={{ height: "100%", width: "100%" }}
         >
-          <CircularGallery
-            bend={4}
-            textColor="#ffffff"
-            borderRadius={0.05}
-            scrollEase={0.02}
-          />
+          <CircularGallery bend={4} textColor="#ffffff" borderRadius={0.05} />
         </div>
       </div>
       <AnimatedBeamDemo />

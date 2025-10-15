@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-
+// ini halaman /seminar
 "use client";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
@@ -97,10 +97,8 @@ export default function SeminarPage() {
   };
 
   return (
-    <div className="min-h-screen py-20 px-4 md:px-8">
+    <div className="min-h-screen py-28 px-4 md:px-8">
       <div className="md:px-36 mx-auto">
-        {/* Header Section */}
-
         <div className="flex mb-16 md:flex-row-reverse gap-5 flex-col-reverse  justify-between items-start">
           <div className="">
             <motion.div

@@ -14,7 +14,8 @@ export const LogoIntro = ({ onComplete }: { onComplete: () => void }) => {
     <motion.div
       className="fixed inset-0 z-[10000] flex items-center justify-center bg-zinc-950"
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.5 }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+      style={{ willChange: "opacity" }}
     >
       <motion.div
         className="absolute w-64 h-64 blur-3xl bg-purple-500/30 rounded-full"
@@ -27,6 +28,11 @@ export const LogoIntro = ({ onComplete }: { onComplete: () => void }) => {
           repeat: Infinity,
           ease: "easeInOut",
         }}
+        style={{
+          willChange: "transform, opacity",
+          backfaceVisibility: "hidden",
+          perspective: 1000,
+        }}
       />
 
       <motion.div
@@ -34,8 +40,10 @@ export const LogoIntro = ({ onComplete }: { onComplete: () => void }) => {
         style={{
           width: 128,
           height: 128,
+          willChange: "opacity",
         }}
         animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
       >
         <Image
           src="/assets/logo.png"
@@ -43,22 +51,32 @@ export const LogoIntro = ({ onComplete }: { onComplete: () => void }) => {
           width={128}
           height={128}
           priority
+          quality={90}
           className="w-full h-full"
+          style={{
+            transform: "translateZ(0)",
+            backfaceVisibility: "hidden",
+          }}
         />
       </motion.div>
+
       <motion.p
         className="absolute font-funky text-2xl font-bold text-white"
-        style={{ top: "calc(50% + 90px)" }}
+        style={{
+          top: "calc(50% + 90px)",
+          willChange: "opacity, transform",
+        }}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{
           opacity: 0,
-          y: -90,
-          scale: 0,
+          y: -20,
+          scale: 0.95,
         }}
         transition={{
-          duration: 0.5,
-          delay: 0.3,
+          duration: 0.4,
+          delay: 0.2,
+          ease: "easeOut",
         }}
       >
         Valter 2025

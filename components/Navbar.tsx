@@ -43,7 +43,7 @@ const Navbar = ({ show }: { show: boolean }) => {
         <div className="pt-3 z-50 flex justify-center items-center top-0 right-0">
           <div className="w-full">
             <motion.div
-              className="relative backdrop-blur-xl overflow-hidden text-white border-t border-purple-500/20 bg-slate-900/40 shadow-2xl rounded-2xl"
+              className="relative  backdrop-blur-xl overflow-hidden text-white border-t border-purple-500/20 bg-slate-900/40 shadow-2xl rounded-2xl"
               style={{ padding: navbarPadding }}
             >
               <div className="flex justify-between items-center">
@@ -146,7 +146,13 @@ const Navbar = ({ show }: { show: boolean }) => {
 
               <BorderBeam
                 duration={12}
-                size={150}
+                size={100}
+                className="from-transparent via-purple-500 to-fuchsia-900"
+              />
+              <BorderBeam
+                duration={12}
+                size={100}
+                delay={6}
                 className="from-transparent via-purple-500 to-fuchsia-900"
               />
             </motion.div>
@@ -154,11 +160,9 @@ const Navbar = ({ show }: { show: boolean }) => {
         </div>
       </div>
 
-      {/* Mobile Menu Overlay */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <>
-            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -168,7 +172,6 @@ const Navbar = ({ show }: { show: boolean }) => {
               onClick={closeMobileMenu}
             />
 
-            {/* Mobile Menu Bottom Sheet */}
             <motion.div
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
@@ -177,7 +180,6 @@ const Navbar = ({ show }: { show: boolean }) => {
               className="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-xl border-t border-purple-500/20 shadow-2xl rounded-t-3xl z-[9999] lg:hidden max-h-[70vh] overflow-y-auto"
             >
               <div className="flex flex-col px-6 py-6">
-                {/* Drag Handle */}
                 <div className="flex justify-center mb-4">
                   <div className="w-12 h-1.5 bg-purple-500/30 rounded-full" />
                 </div>
@@ -201,7 +203,6 @@ const Navbar = ({ show }: { show: boolean }) => {
                   ))}
                 </nav>
 
-                {/* Bottom Sheet Footer */}
                 <div className="mt-6 pt-4 border-t border-purple-500/10">
                   <p className="text-xs text-gray-500 text-center">
                     © 2025 Valter. All rights reserved.
@@ -209,7 +210,6 @@ const Navbar = ({ show }: { show: boolean }) => {
                 </div>
               </div>
 
-              {/* Decorative gradient */}
               <div className="absolute top-0 left-0 right-0 h-20 bg-gradient-to-b from-purple-500/5 to-transparent pointer-events-none" />
             </motion.div>
           </>

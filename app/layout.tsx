@@ -33,10 +33,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} relative bg-zinc-950  antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} relative bg-gray-950  antialiased`}
       >
-        {/* <LightRays color="oklch(15.1% 0.149 302.717)" count={10} speed={3} /> */}
-        <div className="">
+        <div className="relative">
           <AppWrapper>{children}</AppWrapper>
         </div>
       </body>
