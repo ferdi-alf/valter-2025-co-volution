@@ -48,9 +48,7 @@ function createTextTexture(
   color: string = "black"
 ): { texture: Texture; width: number; height: number } {
   const canvas = document.createElement("canvas");
-  const context = canvas.getContext("2d", {
-    willReadFrequently: false, // Optimize canvas
-  });
+  const context = canvas.getContext("2d");
   if (!context) throw new Error("Could not get 2d context");
 
   context.font = font;
@@ -69,11 +67,7 @@ function createTextTexture(
   context.clearRect(0, 0, canvas.width, canvas.height);
   context.fillText(text, canvas.width / 2, canvas.height / 2);
 
-  const texture = new Texture(gl, {
-    generateMipmaps: false,
-    minFilter: gl.LINEAR,
-    magFilter: gl.LINEAR,
-  });
+  const texture = new Texture(gl, { generateMipmaps: false });
   texture.image = canvas;
   return { texture, width: canvas.width, height: canvas.height };
 }
@@ -106,6 +100,7 @@ class Title {
   }: TitleProps) {
     autoBind(this);
     this.gl = gl;
+
     this.plane = plane;
     this.renderer = renderer;
     this.text = text;
@@ -121,14 +116,9 @@ class Title {
       this.font,
       this.textColor
     );
-    const geometry = new Plane(this.gl, {
-      widthSegments: 1,
-      heightSegments: 1,
-    });
-
+    const geometry = new Plane(this.gl);
     const program = new Program(this.gl, {
       vertex: `
-        precision mediump float;
         attribute vec3 position;
         attribute vec2 uv;
         uniform mat4 modelViewMatrix;
@@ -140,7 +130,7 @@ class Title {
         }
       `,
       fragment: `
-        precision mediump float;
+        precision highp float;
         uniform sampler2D tMap;
         varying vec2 vUv;
         void main() {
@@ -151,10 +141,7 @@ class Title {
       `,
       uniforms: { tMap: { value: texture } },
       transparent: true,
-      depthTest: false,
-      depthWrite: false,
     });
-
     this.mesh = new Mesh(this.gl, { geometry, program });
     const aspect = width / height;
     const textHeightScaled = this.plane.scale.y * 0.15;
@@ -191,9 +178,11 @@ interface MediaProps {
   textColor: string;
   borderRadius?: number;
   font?: string;
+  textureCache?: Map<string, any>; // TAMBAHKAN ini
 }
 
 class Media {
+  textureCache?: Map<string, any>;
   extra: number = 0;
   geometry: Plane;
   gl: GL;
@@ -222,7 +211,7 @@ class Media {
   speed: number = 0;
   isBefore: boolean = false;
   isAfter: boolean = false;
-  isVisible: boolean = true;
+  frameCount: number;
 
   constructor({
     geometry,
@@ -239,10 +228,13 @@ class Media {
     textColor,
     borderRadius = 0,
     font,
+    textureCache,
   }: MediaProps) {
     this.geometry = geometry;
     this.gl = gl;
+    this.frameCount = 0;
     this.image = image;
+    this.textureCache = textureCache;
     this.index = index;
     this.length = length;
     this.renderer = renderer;
@@ -261,151 +253,229 @@ class Media {
   }
 
   createShader() {
-    const texture = new Texture(this.gl, {
-      generateMipmaps: true,
-      minFilter: this.gl.LINEAR_MIPMAP_LINEAR,
-      magFilter: this.gl.LINEAR,
-    });
+    const cachedTexture = this.textureCache?.get(this.image);
 
-    // Simplified skeleton shader - no animation
+    let texture: Texture;
+
+    if (cachedTexture) {
+      console.log(`[Cache HIT] ${this.image}`);
+      texture = cachedTexture.texture;
+
+      if (cachedTexture.isLoaded) {
+        this.setupPrograms(texture, cachedTexture.width, cachedTexture.height);
+        this.isLoaded = true;
+        this.onResize();
+      } else {
+        this.setupPrograms(texture, 0, 0);
+
+        const checkLoaded = setInterval(() => {
+          const cache = this.textureCache?.get(this.image);
+          if (cache?.isLoaded) {
+            this.program.uniforms.uImageSizes.value = [
+              cache.width,
+              cache.height,
+            ];
+            this.isLoaded = true;
+            this.plane.program = this.program;
+            this.onResize();
+            clearInterval(checkLoaded);
+          }
+        }, 100);
+      }
+    } else {
+      console.log(`[Cache MISS] Loading ${this.image}`);
+      texture = new Texture(this.gl, { generateMipmaps: false });
+
+      if (this.textureCache) {
+        this.textureCache.set(this.image, {
+          texture,
+          width: 0,
+          height: 0,
+          isLoaded: false,
+        });
+      }
+
+      this.setupPrograms(texture, 0, 0);
+
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.decoding = "async";
+
+      img.onload = () => {
+        const MAX_SIZE = 1024;
+
+        const processImage = (sourceImg: HTMLImageElement) => {
+          texture.image = sourceImg;
+          texture.minFilter = this.gl.LINEAR;
+          texture.magFilter = this.gl.LINEAR;
+          texture.generateMipmaps = false;
+
+          if (this.textureCache) {
+            this.textureCache.set(this.image, {
+              texture,
+              width: sourceImg.width,
+              height: sourceImg.height,
+              isLoaded: true,
+            });
+          }
+
+          this.program.uniforms.uImageSizes.value = [
+            sourceImg.width,
+            sourceImg.height,
+          ];
+          this.isLoaded = true;
+          this.plane.program = this.program;
+          this.onResize();
+        };
+
+        if (img.naturalWidth > MAX_SIZE || img.naturalHeight > MAX_SIZE) {
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+
+          const scale = Math.min(
+            MAX_SIZE / img.naturalWidth,
+            MAX_SIZE / img.naturalHeight
+          );
+          canvas.width = Math.floor(img.naturalWidth * scale);
+          canvas.height = Math.floor(img.naturalHeight * scale);
+
+          ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                const url = URL.createObjectURL(blob);
+                const resizedImg = new Image();
+                resizedImg.onload = () => {
+                  processImage(resizedImg);
+                  URL.revokeObjectURL(url);
+                };
+                resizedImg.src = url;
+              } else {
+                processImage(img);
+              }
+            },
+            "image/jpeg",
+            0.85
+          );
+        } else {
+          processImage(img);
+        }
+      };
+
+      img.onerror = () => {
+        console.error(`Failed to load image: ${this.image}`);
+      };
+
+      img.src = this.image;
+    }
+  }
+
+  setupPrograms(texture: Texture, width: number, height: number) {
+    // Skeleton program (same as before)
     this.skeletonProgram = new Program(this.gl, {
       depthTest: false,
       depthWrite: false,
       vertex: `
-        precision mediump float;
-        attribute vec3 position;
-        attribute vec2 uv;
-        uniform mat4 modelViewMatrix;
-        uniform mat4 projectionMatrix;
-        varying vec2 vUv;
-        void main() {
-          vUv = uv;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
+      precision highp float;
+      attribute vec3 position;
+      attribute vec2 uv;
+      uniform mat4 modelViewMatrix;
+      uniform mat4 projectionMatrix;
+      uniform float uTime;
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
       fragment: `
-        precision mediump float;
-        uniform float uBorderRadius;
-        varying vec2 vUv;
-        
-        float roundedBoxSDF(vec2 p, vec2 b, float r) {
-          vec2 d = abs(p) - b;
-          return length(max(d, vec2(0.0))) + min(max(d.x, d.y), 0.0) - r;
-        }
-        
-        void main() {
-          vec3 color = vec3(0.15);
-          float d = roundedBoxSDF(vUv - 0.5, vec2(0.5 - uBorderRadius), uBorderRadius);
-          float alpha = 1.0 - smoothstep(-0.002, 0.002, d);
-          gl_FragColor = vec4(color, alpha);
-        }
-      `,
+      precision mediump float;
+      uniform float uTime;
+      uniform float uBorderRadius;
+      varying vec2 vUv;
+      
+      float roundedBoxSDF(vec2 p, vec2 b, float r) {
+        vec2 d = abs(p) - b;
+        return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0) - r;
+      }
+      
+      void main() {
+        float shimmer = sin(vUv.x * 2.0 + uTime) * 0.3 + 0.7;
+        vec3 color = vec3(0.2 * shimmer);
+        float d = roundedBoxSDF(vUv - 0.5, vec2(0.5 - uBorderRadius), uBorderRadius);
+        float alpha = 1.0 - smoothstep(-0.002, 0.002, d);
+        gl_FragColor = vec4(color, alpha);
+      }
+    `,
       uniforms: {
+        uTime: { value: 0 },
         uBorderRadius: { value: this.borderRadius },
       },
       transparent: true,
     });
 
-    // Optimized main shader - reduced calculations
+    // Main program
     this.program = new Program(this.gl, {
       depthTest: false,
       depthWrite: false,
       vertex: `
-        precision mediump float;
-        attribute vec3 position;
-        attribute vec2 uv;
-        uniform mat4 modelViewMatrix;
-        uniform mat4 projectionMatrix;
-        uniform float uSpeed;
-        varying vec2 vUv;
-        void main() {
-          vUv = uv;
-          vec3 p = position;
-          // Simplified wave - only when moving fast
-          if (abs(uSpeed) > 0.01) {
-            p.z = sin(p.x * 3.0) * uSpeed * 0.3;
-          }
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
-        }
-      `,
+      precision highp float;
+      attribute vec3 position;
+      attribute vec2 uv;
+      uniform mat4 modelViewMatrix;
+      uniform mat4 projectionMatrix;
+      uniform float uTime;
+      uniform float uSpeed;
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        vec3 p = position;
+        float wave = sin(p.x * 3.0 + uTime) * 1.2;
+        float speedFactor = clamp(uSpeed * 0.3, 0.0, 0.5);
+        p.z = wave * (0.08 + speedFactor);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+      }
+    `,
       fragment: `
-        precision mediump float;
-        uniform vec2 uImageSizes;
-        uniform vec2 uPlaneSizes;
-        uniform sampler2D tMap;
-        uniform float uBorderRadius;
-        varying vec2 vUv;
-        
-        float roundedBoxSDF(vec2 p, vec2 b, float r) {
-          vec2 d = abs(p) - b;
-          return length(max(d, vec2(0.0))) + min(max(d.x, d.y), 0.0) - r;
-        }
-        
-        void main() {
-          vec2 ratio = vec2(
-            min((uPlaneSizes.x / uPlaneSizes.y) / (uImageSizes.x / uImageSizes.y), 1.0),
-            min((uPlaneSizes.y / uPlaneSizes.x) / (uImageSizes.y / uImageSizes.x), 1.0)
-          );
-          vec2 uv = vec2(
-            vUv.x * ratio.x + (1.0 - ratio.x) * 0.5,
-            vUv.y * ratio.y + (1.0 - ratio.y) * 0.5
-          );
-          vec4 color = texture2D(tMap, uv);
-          
-          float d = roundedBoxSDF(vUv - 0.5, vec2(0.5 - uBorderRadius), uBorderRadius);
-          float alpha = 1.0 - smoothstep(-0.002, 0.002, d);
-          
-          gl_FragColor = vec4(color.rgb, alpha);
-        }
-      `,
+      precision highp float;
+      uniform vec2 uImageSizes;
+      uniform vec2 uPlaneSizes;
+      uniform sampler2D tMap;
+      uniform float uBorderRadius;
+      varying vec2 vUv;
+      
+      float roundedBoxSDF(vec2 p, vec2 b, float r) {
+        vec2 d = abs(p) - b;
+        return length(max(d, vec2(0.0))) + min(max(d.x, d.y), 0.0) - r;
+      }
+      
+      void main() {
+        vec2 ratio = vec2(
+          min((uPlaneSizes.x / uPlaneSizes.y) / (uImageSizes.x / uImageSizes.y), 1.0),
+          min((uPlaneSizes.y / uPlaneSizes.x) / (uImageSizes.y / uImageSizes.x), 1.0)
+        );
+        vec2 uv = vec2(
+          vUv.x * ratio.x + (1.0 - ratio.x) * 0.5,
+          vUv.y * ratio.y + (1.0 - ratio.y) * 0.5
+        );
+        vec4 color = texture2D(tMap, uv);
+        float d = roundedBoxSDF(vUv - 0.5, vec2(0.5 - uBorderRadius), uBorderRadius);
+        float edgeSmooth = 0.002;
+        float alpha = 1.0 - smoothstep(-edgeSmooth, edgeSmooth, d);
+        gl_FragColor = vec4(color.rgb, alpha);
+      }
+    `,
       uniforms: {
         tMap: { value: texture },
         uPlaneSizes: { value: [0, 0] },
-        uImageSizes: { value: [0, 0] },
+        uImageSizes: { value: [width, height] },
         uSpeed: { value: 0 },
+        uTime: { value: 100 * Math.random() },
         uBorderRadius: { value: this.borderRadius },
       },
       transparent: true,
     });
-
-    // Lazy load images
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.loading = "lazy";
-
-    img.onload = () => {
-      // Resize image if too large
-      const maxSize = 1024;
-      let width = img.naturalWidth;
-      let height = img.naturalHeight;
-
-      if (width > maxSize || height > maxSize) {
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-
-        if (width > height) {
-          canvas.width = maxSize;
-          canvas.height = (height * maxSize) / width;
-        } else {
-          canvas.height = maxSize;
-          canvas.width = (width * maxSize) / height;
-        }
-
-        ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
-        texture.image = canvas;
-        width = canvas.width;
-        height = canvas.height;
-      } else {
-        texture.image = img;
-      }
-
-      this.program.uniforms.uImageSizes.value = [width, height];
-      this.isLoaded = true;
-      this.plane.program = this.program;
-      this.onResize();
-    };
-
-    img.src = this.image;
   }
 
   createMesh() {
@@ -431,36 +501,20 @@ class Media {
     scroll: { current: number; last: number },
     direction: "right" | "left"
   ) {
-    this.plane.position.x = this.x - scroll.current - this.extra;
-    const x = this.plane.position.x;
-    const H = this.viewport.width / 2;
-
-    // Frustum culling - hide planes outside viewport
-    const planeOffset = this.plane.scale.x / 2;
-    const viewportOffset = this.viewport.width / 2 + this.plane.scale.x;
-    this.isVisible =
-      this.plane.position.x + planeOffset > -viewportOffset &&
-      this.plane.position.x - planeOffset < viewportOffset;
-
-    this.plane.visible = this.isVisible;
-
-    if (!this.isVisible) {
-      // Skip expensive calculations for invisible planes
-      this.isBefore = this.plane.position.x + planeOffset < -viewportOffset;
-      this.isAfter = this.plane.position.x - planeOffset > viewportOffset;
-
-      if (direction === "right" && this.isBefore) {
-        this.extra -= this.widthTotal;
-        this.isBefore = this.isAfter = false;
-      }
-      if (direction === "left" && this.isAfter) {
-        this.extra += this.widthTotal;
-        this.isBefore = this.isAfter = false;
-      }
+    this.frameCount++;
+    const isOffscreen = Math.abs(this.plane.position.x) > this.viewport.width;
+    if (isOffscreen && this.frameCount % 3 !== 0) {
       return;
     }
 
-    // Bend calculation
+    if (!this.isLoaded && this.skeletonProgram) {
+      this.skeletonProgram.uniforms.uTime.value += 0.04;
+    }
+    this.plane.position.x = this.x - scroll.current - this.extra;
+
+    const x = this.plane.position.x;
+    const H = this.viewport.width / 2;
+
     if (this.bend === 0) {
       this.plane.position.y = 0;
       this.plane.rotation.z = 0;
@@ -468,32 +522,25 @@ class Media {
       const B_abs = Math.abs(this.bend);
       const R = (H * H + B_abs * B_abs) / (2 * B_abs);
       const effectiveX = Math.min(Math.abs(x), H);
+
       const arc = R - Math.sqrt(R * R - effectiveX * effectiveX);
       if (this.bend > 0) {
         this.plane.position.y = -arc;
-        this.plane.rotation.z = -Math.sign(x) * Math.asin(effectiveX / R);
+        this.plane.rotation.z = 0;
       } else {
         this.plane.position.y = arc;
-        this.plane.rotation.z = Math.sign(x) * Math.asin(effectiveX / R);
+        this.plane.rotation.z = 0;
       }
     }
 
     this.speed = scroll.current - scroll.last;
+    this.program.uniforms.uTime.value += 0.04;
+    this.program.uniforms.uSpeed.value = this.speed;
 
-    // Only update speed uniform if loaded and moving significantly
-    if (this.isLoaded && Math.abs(this.speed) > 0.005) {
-      this.program.uniforms.uSpeed.value = this.speed;
-    } else if (this.isLoaded) {
-      this.program.uniforms.uSpeed.value *= 0.9;
-    }
-
-    const planeOffsetCheck = this.plane.scale.x / 2;
-    const viewportOffsetCheck = this.viewport.width / 2;
-    this.isBefore =
-      this.plane.position.x + planeOffsetCheck < -viewportOffsetCheck;
-    this.isAfter =
-      this.plane.position.x - planeOffsetCheck > viewportOffsetCheck;
-
+    const planeOffset = this.plane.scale.x / 2;
+    const viewportOffset = this.viewport.width / 2;
+    this.isBefore = this.plane.position.x + planeOffset < -viewportOffset;
+    this.isAfter = this.plane.position.x - planeOffset > viewportOffset;
     if (direction === "right" && this.isBefore) {
       this.extra -= this.widthTotal;
       this.isBefore = this.isAfter = false;
@@ -557,9 +604,6 @@ interface AppConfig {
 }
 
 class App {
-  isAnimating: boolean = false;
-  lastInteraction: number = 0;
-  idleThreshold: number = 3000; // Increased idle threshold
   container: HTMLElement;
   scrollSpeed: number;
   scroll: {
@@ -569,6 +613,17 @@ class App {
     last: number;
     position?: number;
   };
+  textureCache:
+    | Map<
+        string,
+        {
+          texture: Texture;
+          width: number;
+          height: number;
+          isLoaded: boolean;
+        }
+      >
+    | undefined;
   onCheckDebounce: (...args: any[]) => void;
   renderer!: Renderer;
   gl!: GL;
@@ -589,6 +644,9 @@ class App {
 
   isDown: boolean = false;
   start: number = 0;
+  wheelThrottle: number;
+  lastFrameTime: number;
+  fpsLimit: number;
 
   constructor(
     container: HTMLElement,
@@ -599,11 +657,15 @@ class App {
       borderRadius = 0,
       font = "bold 30px Figtree",
       scrollSpeed = 2,
-      scrollEase = 0.075, // Slightly higher ease for smoother stop
+      scrollEase = 0.05,
     }: AppConfig
   ) {
     document.documentElement.classList.remove("no-js");
     this.container = container;
+    this.textureCache = new Map();
+    this.wheelThrottle = 0;
+    this.lastFrameTime = 0;
+    this.fpsLimit = 1000 / 60;
     this.scrollSpeed = scrollSpeed;
     this.scroll = { ease: scrollEase, current: 0, target: 0, last: 0 };
     this.onCheckDebounce = debounce(this.onCheck.bind(this), 200);
@@ -613,22 +675,32 @@ class App {
     this.onResize();
     this.createGeometry();
     this.createMedias(items, bend, textColor, borderRadius, font);
-    this.addEventListeners();
-
-    // Start with one render
     this.update();
+    this.addEventListeners();
   }
 
   createRenderer() {
-    // CRITICAL: Lower DPR for better performance
+    const isMobile = /Android|webOS|iPhone|iPad|iPod/i.test(
+      navigator.userAgent
+    );
+    const maxDpr = isMobile ? 1.5 : 2;
+
     this.renderer = new Renderer({
       alpha: true,
       antialias: false,
-      dpr: Math.min(window.devicePixelRatio || 1, 1.2), // Lowered from 1.5
+      dpr: Math.min(window.devicePixelRatio || 1, maxDpr),
+      depth: false,
+      stencil: false,
       powerPreference: "high-performance",
     });
+
     this.gl = this.renderer.gl;
     this.gl.clearColor(0, 0, 0, 0);
+
+    this.gl.disable(this.gl.DEPTH_TEST);
+    this.gl.disable(this.gl.STENCIL_TEST);
+    this.gl.disable(this.gl.DITHER);
+
     this.container.appendChild(this.renderer.gl.canvas as HTMLCanvasElement);
   }
 
@@ -643,10 +715,11 @@ class App {
   }
 
   createGeometry() {
-    // CRITICAL: Reduced segments dramatically
+    const isMobile = window.innerWidth < 768;
+
     this.planeGeometry = new Plane(this.gl, {
-      heightSegments: 20, // Was 50 - reduced by 60%
-      widthSegments: 30, // Was 100 - reduced by 70%
+      heightSegments: isMobile ? 20 : 30,
+      widthSegments: isMobile ? 40 : 60,
     });
   }
 
@@ -659,27 +732,27 @@ class App {
   ) {
     const defaultItems = [
       {
-        image: `/assets/posters/posterLomba.png`,
+        image: `/assets/posters/posterLomb.jpeg`,
         text: "Lomba",
       },
       {
-        image: `/assets/posters/posterMole.png`,
+        image: `/assets/posters/posterMol.jpeg`,
         text: "Mobile Legends",
       },
       {
-        image: `/assets/posters/posterPelatihan.png`,
+        image: `/assets/posters/posterPelatiha.jpeg`,
         text: "Pelatihan",
       },
       {
-        image: `/assets/posters/posterSeminar.png`,
+        image: `/assets/posters/posterSemina.jpeg`,
         text: "Seminar",
       },
       {
-        image: `/assets/posters/posterVidCamp.png`,
-        text: "Video Campaign",
+        image: `/assets/posters/posterVidCam.jpeg`,
+        text: "Video Campign",
       },
       {
-        image: `/assets/posters/posterWebDes.png`,
+        image: `/assets/posters/posterWebDe.jpeg`,
         text: "Web Design",
       },
     ];
@@ -701,6 +774,7 @@ class App {
         textColor,
         borderRadius,
         font,
+        textureCache: this.textureCache,
       });
     });
   }
@@ -709,7 +783,6 @@ class App {
     this.isDown = true;
     this.scroll.position = this.scroll.current;
     this.start = "touches" in e ? e.touches[0].clientX : e.clientX;
-    this.startAnimating();
   }
 
   onTouchMove(e: MouseEvent | TouchEvent) {
@@ -717,7 +790,6 @@ class App {
     const x = "touches" in e ? e.touches[0].clientX : e.clientX;
     const distance = (this.start - x) * (this.scrollSpeed * 0.025);
     this.scroll.target = (this.scroll.position ?? 0) + distance;
-    this.startAnimating();
   }
 
   onTouchUp() {
@@ -726,6 +798,10 @@ class App {
   }
 
   onWheel(e: Event) {
+    const now = performance.now();
+    if (now - this.wheelThrottle < 16) return;
+    this.wheelThrottle = now;
+
     const wheelEvent = e as WheelEvent;
     const delta =
       wheelEvent.deltaY ||
@@ -734,7 +810,6 @@ class App {
     this.scroll.target +=
       (delta > 0 ? this.scrollSpeed : -this.scrollSpeed) * 0.2;
     this.onCheckDebounce();
-    this.startAnimating();
   }
 
   onCheck() {
@@ -766,16 +841,18 @@ class App {
   }
 
   update() {
-    const now = performance.now();
-    const timeSinceInteraction = now - this.lastInteraction;
-    const delta = Math.abs(this.scroll.target - this.scroll.current);
+    this.raf = window.requestAnimationFrame(this.update.bind(this));
 
-    // Stop animating when idle and settled
-    if (timeSinceInteraction > this.idleThreshold && delta < 0.01) {
-      this.isAnimating = false;
-      this.scroll.current = this.scroll.target; // Snap to target
-      return;
-    }
+    // TAMBAHKAN: FPS limiting
+    const now = performance.now();
+    const elapsed = now - this.lastFrameTime;
+
+    if (elapsed < this.fpsLimit) return;
+    this.lastFrameTime = now - (elapsed % this.fpsLimit);
+
+    // Hanya update jika ada perubahan signifikan
+    const scrollDiff = Math.abs(this.scroll.target - this.scroll.current);
+    if (scrollDiff < 0.01 && !this.isDown) return;
 
     this.scroll.current = lerp(
       this.scroll.current,
@@ -791,46 +868,23 @@ class App {
 
     this.renderer.render({ scene: this.scene, camera: this.camera });
     this.scroll.last = this.scroll.current;
-
-    if (this.isAnimating) {
-      this.raf = window.requestAnimationFrame(this.update.bind(this));
-    }
-  }
-
-  startAnimating() {
-    if (this.isAnimating) {
-      this.lastInteraction = performance.now();
-      return;
-    }
-    this.isAnimating = true;
-    this.lastInteraction = performance.now();
-    this.raf = window.requestAnimationFrame(this.update.bind(this));
   }
 
   addEventListeners() {
-    this.boundOnResize = debounce(this.onResize.bind(this), 150); // Debounced resize
+    this.boundOnResize = this.onResize.bind(this);
     this.boundOnWheel = this.onWheel.bind(this);
     this.boundOnTouchDown = this.onTouchDown.bind(this);
     this.boundOnTouchMove = this.onTouchMove.bind(this);
     this.boundOnTouchUp = this.onTouchUp.bind(this);
-
     window.addEventListener("resize", this.boundOnResize);
-    window.addEventListener("mousewheel", this.boundOnWheel, { passive: true });
-    window.addEventListener("wheel", this.boundOnWheel, { passive: true });
-    window.addEventListener("mousedown", this.boundOnTouchDown, {
-      passive: true,
-    });
-    window.addEventListener("mousemove", this.boundOnTouchMove, {
-      passive: true,
-    });
-    window.addEventListener("mouseup", this.boundOnTouchUp, { passive: true });
-    window.addEventListener("touchstart", this.boundOnTouchDown, {
-      passive: true,
-    });
-    window.addEventListener("touchmove", this.boundOnTouchMove, {
-      passive: true,
-    });
-    window.addEventListener("touchend", this.boundOnTouchUp, { passive: true });
+    window.addEventListener("mousewheel", this.boundOnWheel);
+    window.addEventListener("wheel", this.boundOnWheel);
+    window.addEventListener("mousedown", this.boundOnTouchDown);
+    window.addEventListener("mousemove", this.boundOnTouchMove);
+    window.addEventListener("mouseup", this.boundOnTouchUp);
+    window.addEventListener("touchstart", this.boundOnTouchDown);
+    window.addEventListener("touchmove", this.boundOnTouchMove);
+    window.addEventListener("touchend", this.boundOnTouchUp);
   }
 
   destroy() {
@@ -844,23 +898,6 @@ class App {
     window.removeEventListener("touchstart", this.boundOnTouchDown);
     window.removeEventListener("touchmove", this.boundOnTouchMove);
     window.removeEventListener("touchend", this.boundOnTouchUp);
-
-    // Clean up WebGL resources
-    if (this.medias) {
-      this.medias.forEach((media) => {
-        if (media.plane.geometry) {
-          media.plane.geometry.remove();
-        }
-        if (media.plane.program) {
-          media.plane.program.remove();
-        }
-      });
-    }
-
-    if (this.planeGeometry) {
-      this.planeGeometry.remove();
-    }
-
     if (
       this.renderer &&
       this.renderer.gl &&
@@ -890,14 +927,11 @@ export default function CircularGallery({
   borderRadius = 0.05,
   font = "bold 30px Figtree",
   scrollSpeed = 2,
-  scrollEase = 0.075,
+  scrollEase = 0.05,
 }: CircularGalleryProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const appRef = useRef<App | null>(null);
-
   useEffect(() => {
     if (!containerRef.current) return;
-
     const app = new App(containerRef.current, {
       items,
       bend,
@@ -907,14 +941,9 @@ export default function CircularGallery({
       scrollSpeed,
       scrollEase,
     });
-
-    appRef.current = app;
-
     return () => {
       app.destroy();
-      appRef.current = null;
     };
   }, [items, bend, textColor, borderRadius, font, scrollSpeed, scrollEase]);
-
   return <div className="circular-gallery" ref={containerRef} />;
 }

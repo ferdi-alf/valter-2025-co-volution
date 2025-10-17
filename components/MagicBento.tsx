@@ -42,7 +42,7 @@ const getLanyardPosition = (): [number, number, number] => {
 
   if (width < 600) return [0, 0, 13];
   if (width < 1024) return [0, 0, 12];
-  return [0, 0, 15];
+  return [0, 0, 12];
 };
 
 const cardData: BentoCardProps[] = [

@@ -3,7 +3,7 @@ import { HeroVideoDialog } from "@/components/ui/hero-video-dialog";
 
 export function TeaserVideo() {
   return (
-    <div className="mb-5">
+    <div className="mb-5 mt-32">
       <div className="text-center">
         <h1 className="font-funky text-4xl mb-3 md:text-7xl   font-medium font-funky tracking-tighte">
           <GradientText

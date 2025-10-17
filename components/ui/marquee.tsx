@@ -1,36 +1,13 @@
-import { ComponentPropsWithoutRef } from "react"
-
-import { cn } from "@/lib/utils"
+import { ComponentPropsWithoutRef, useMemo } from "react";
+import { cn } from "@/lib/utils";
 
 interface MarqueeProps extends ComponentPropsWithoutRef<"div"> {
-  /**
-   * Optional CSS class name to apply custom styles
-   */
-  className?: string
-  /**
-   * Whether to reverse the animation direction
-   * @default false
-   */
-  reverse?: boolean
-  /**
-   * Whether to pause the animation on hover
-   * @default false
-   */
-  pauseOnHover?: boolean
-  /**
-   * Content to be displayed in the marquee
-   */
-  children: React.ReactNode
-  /**
-   * Whether to animate vertically instead of horizontally
-   * @default false
-   */
-  vertical?: boolean
-  /**
-   * Number of times to repeat the content
-   * @default 4
-   */
-  repeat?: number
+  className?: string;
+  reverse?: boolean;
+  pauseOnHover?: boolean;
+  children: React.ReactNode;
+  vertical?: boolean;
+  repeat?: number;
 }
 
 export function Marquee({
@@ -42,6 +19,25 @@ export function Marquee({
   repeat = 4,
   ...props
 }: MarqueeProps) {
+  const repeatedItems = useMemo(
+    () =>
+      Array.from({ length: repeat }, (_, i) => (
+        <div
+          key={i}
+          className={cn("flex shrink-0 justify-around [gap:var(--gap)]", {
+            "animate-marquee flex-row": !vertical,
+            "animate-marquee-vertical flex-col": vertical,
+            "group-hover:[animation-play-state:paused]": pauseOnHover,
+            "[animation-direction:reverse]": reverse,
+          })}
+          style={{ willChange: vertical ? "transform" : "transform" }}
+        >
+          {children}
+        </div>
+      )),
+    [repeat, children, vertical, pauseOnHover, reverse]
+  );
+
   return (
     <div
       {...props}
@@ -53,22 +49,13 @@ export function Marquee({
         },
         className
       )}
+      style={{
+        ...props.style,
+        backfaceVisibility: "hidden",
+        perspective: 1000,
+      }}
     >
-      {Array(repeat)
-        .fill(0)
-        .map((_, i) => (
-          <div
-            key={i}
-            className={cn("flex shrink-0 justify-around [gap:var(--gap)]", {
-              "animate-marquee flex-row": !vertical,
-              "animate-marquee-vertical flex-col": vertical,
-              "group-hover:[animation-play-state:paused]": pauseOnHover,
-              "[animation-direction:reverse]": reverse,
-            })}
-          >
-            {children}
-          </div>
-        ))}
+      {repeatedItems}
     </div>
-  )
+  );
 }

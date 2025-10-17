@@ -293,6 +293,8 @@ export const LaserFlow: React.FC<Props> = ({
   const mouseTargetRef = useRef<THREE.Vector2>(new THREE.Vector2(0, 0));
   const mouseSmoothRef = useRef<THREE.Vector2>(new THREE.Vector2(0, 0));
   const resizeTimeoutRef = useRef<number>(0);
+  const frameTimesRef = useRef<number[]>([]);
+  const lowPerfModeRef = useRef(false);
 
   const hexToRGB = useCallback((hex: string) => {
     let c = hex.trim();
@@ -342,6 +344,13 @@ export const LaserFlow: React.FC<Props> = ({
       failIfMajorPerformanceCaveat: false,
     });
     rendererRef.current = renderer;
+
+    const gl = renderer.getContext();
+    if (gl) {
+      gl.disable(gl.DEPTH_TEST);
+      gl.disable(gl.STENCIL_TEST);
+      gl.disable(gl.DITHER);
+    }
 
     baseDprRef.current = Math.min(dpr ?? (window.devicePixelRatio || 1), 1.5);
     currentDprRef.current = baseDprRef.current;
@@ -418,9 +427,13 @@ export const LaserFlow: React.FC<Props> = ({
 
     setSizeNow();
 
+    let resizeRAF: number | null = null;
     const handleResize = () => {
-      if (resizeTimeoutRef.current) clearTimeout(resizeTimeoutRef.current);
-      resizeTimeoutRef.current = window.setTimeout(setSizeNow, 100);
+      if (resizeRAF) cancelAnimationFrame(resizeRAF);
+      resizeRAF = requestAnimationFrame(() => {
+        setSizeNow();
+        resizeRAF = null;
+      });
     };
 
     const ro = new ResizeObserver(handleResize);
@@ -455,6 +468,8 @@ export const LaserFlow: React.FC<Props> = ({
 
       if (!inViewRef.current || document.hidden) return;
 
+      const frameStart = performance.now();
+
       const t = clock.getElapsedTime();
       const dt = t - prevTimeRef.current;
       prevTimeRef.current = t;
@@ -473,15 +488,50 @@ export const LaserFlow: React.FC<Props> = ({
 
       const tau = Math.max(0.001, mouseSmoothTime);
       const alpha = 1 - Math.exp(-safeDt / tau);
+      const prevX = mouseSmoothRef.current.x;
+      const prevY = mouseSmoothRef.current.y;
       mouseSmoothRef.current.lerp(mouseTargetRef.current, alpha);
-      uniforms.iMouse.value.set(
-        mouseSmoothRef.current.x,
-        mouseSmoothRef.current.y,
-        0,
-        0
-      );
+
+      const dx = Math.abs(mouseSmoothRef.current.x - prevX);
+      const dy = Math.abs(mouseSmoothRef.current.y - prevY);
+      if (dx > 0.5 || dy > 0.5) {
+        uniforms.iMouse.value.set(
+          mouseSmoothRef.current.x,
+          mouseSmoothRef.current.y,
+          0,
+          0
+        );
+      }
 
       renderer.render(scene, camera);
+
+      if (frameTimesRef.current.length > 60) {
+        frameTimesRef.current.shift();
+      }
+
+      if (frameTimesRef.current.length === 60) {
+        const avgFrameTime = frameTimesRef.current.reduce((a, b) => a + b) / 60;
+        const targetFrameTime = 1000 / 50;
+
+        if (avgFrameTime > targetFrameTime && !lowPerfModeRef.current) {
+          lowPerfModeRef.current = true;
+          currentDprRef.current = Math.max(0.75, baseDprRef.current * 0.75);
+          renderer.setPixelRatio(currentDprRef.current);
+          setSizeNow();
+          console.log("LaserFlow: Switched to low performance mode");
+        } else if (
+          avgFrameTime < targetFrameTime * 0.8 &&
+          lowPerfModeRef.current
+        ) {
+          lowPerfModeRef.current = false;
+          currentDprRef.current = baseDprRef.current;
+          renderer.setPixelRatio(currentDprRef.current);
+          setSizeNow();
+          console.log("LaserFlow: Switched to normal performance mode");
+        }
+
+        frameTimesRef.current = [];
+      }
     };
 
     animate();

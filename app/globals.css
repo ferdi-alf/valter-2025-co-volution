@@ -34,6 +34,176 @@
   font-family: "Funky", sans-serif;
 }
 
+.timeline-card,
+.marquee-container,
+.partner-card {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Containment untuk isolasi rendering */
+.timeline-section {
+  contain: layout style paint;
+}
+
+.media-partner-section {
+  contain: layout style;
+}
+
+/* ============================================
+   TIMELINE ANIMATIONS
+   ============================================ */
+
+@keyframes ping-slow {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+.animate-ping-slow {
+  animation: ping-slow 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.timeline-card-wrapper {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s ease;
+}
+
+.timeline-card-wrapper:hover {
+  transform: scale(1.03) translateY(-8px) translateZ(0);
+  box-shadow: 0 20px 25px -5px rgba(168, 85, 247, 0.3),
+    0 10px 10px -5px rgba(168, 85, 247, 0.2);
+  border-color: rgba(168, 85, 247, 0.6);
+}
+
+.timeline-card-glow {
+  position: absolute;
+  inset: -0.25rem;
+  background: linear-gradient(to right, rgb(147, 51, 234), rgb(139, 92, 246));
+  border-radius: 1rem;
+  opacity: 0;
+  filter: blur(1rem);
+  transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.timeline-card-wrapper:hover .timeline-card-glow {
+  opacity: 0.3;
+}
+
+.partner-card {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+
+.partner-card:hover {
+  transform: scale(1.05) translateZ(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .timeline-card-wrapper,
+  .partner-card,
+  .animate-ping-slow {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.scroll-container {
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+.animate-on-scroll {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 500px;
+}
+
+.skeleton-loading {
+  background: linear-gradient(
+    90deg,
+    rgba(26, 26, 46, 0.5) 25%,
+    rgba(46, 46, 66, 0.5) 50%,
+    rgba(26, 26, 46, 0.5) 75%
+  );
+  background-size: 200% 100%;
+  animation: loading 1.5s ease-in-out infinite;
+}
+
+.gradient-text-optimized {
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  will-change: background-position;
+}
+
+.aspect-ratio-box {
+  position: relative;
+  width: 100%;
+}
+
+.aspect-ratio-box::before {
+  content: "";
+  display: block;
+  padding-bottom: 66.67%;
+}
+
+.aspect-ratio-box > * {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.smooth-render {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+@media print {
+  .timeline-card-glow,
+  .animate-ping-slow {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .timeline-card-glow {
+    display: none;
+  }
+
+  .timeline-card-wrapper:hover {
+    transform: scale(1.02) translateY(-4px) translateZ(0);
+  }
+
+  .partner-card:hover {
+    transform: scale(1.03) translateZ(0);
+  }
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -142,10 +312,19 @@
   --animate-marquee-vertical: marquee-vertical var(--duration) linear infinite;
   @keyframes marquee {
     from {
-      transform: translateX(0);
+      transform: translateX(0) translateZ(0);
     }
     to {
-      transform: translateX(calc(-100% - var(--gap)));
+      transform: translateX(calc(-100% - var(--gap))) translateZ(0);
+    }
+  }
+
+  @keyframes marquee-reverse {
+    from {
+      transform: translateX(calc(-100% - var(--gap))) translateZ(0);
+    }
+    to {
+      transform: translateX(0) translateZ(0);
     }
   }
   @keyframes marquee-vertical {

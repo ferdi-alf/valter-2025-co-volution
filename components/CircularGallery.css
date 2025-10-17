@@ -3,8 +3,17 @@
   height: 100%;
   overflow: hidden;
   cursor: grab;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+  contain: layout style paint;
+  overscroll-behavior: none;
+  touch-action: pan-y pinch-zoom;
 }
 
 .circular-gallery:active {
   cursor: grabbing;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  will-change: transform;
 }
