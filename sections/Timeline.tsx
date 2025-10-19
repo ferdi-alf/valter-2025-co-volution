@@ -73,7 +73,7 @@ const Timeline = () => {
 
   return (
     <div
-      className="min-h-screen py-20 px-4 md:px-8 lg:px-0 relative overflow-hidden bg-slate-950"
+      className="min-h-screen py-20 px-4 md:px-8 lg:px-0 relative overflow-hidden "
       style={{
         contain: "layout style",
       }}
