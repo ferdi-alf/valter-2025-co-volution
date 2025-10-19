@@ -13,11 +13,12 @@ import Timeline from "@/sections/Timeline";
 
 enum LoadStage {
   NONE = 0,
-  TEASER_VIDEO = 1,
-  POSTER = 2,
-  TIMELINE = 3,
-  MEDIA_PARTNER = 4,
-  SPONSORSHIP = 5,
+  FEATURES = 1,
+  TEASER_VIDEO = 2,
+  POSTER = 3,
+  TIMELINE = 4,
+  MEDIA_PARTNER = 5,
+  SPONSORSHIP = 6,
 }
 
 export default function Home() {
@@ -25,7 +26,8 @@ export default function Home() {
 
   useEffect(() => {
     const timers = [
-      setTimeout(() => setLoadStage(LoadStage.TEASER_VIDEO), 1900),
+      setTimeout(() => setLoadStage(LoadStage.FEATURES), 1900),
+      setTimeout(() => setLoadStage(LoadStage.TEASER_VIDEO), 2000),
       setTimeout(() => setLoadStage(LoadStage.POSTER), 2200),
       setTimeout(() => setLoadStage(LoadStage.TIMELINE), 2500),
       setTimeout(() => setLoadStage(LoadStage.MEDIA_PARTNER), 2800),
@@ -43,7 +45,14 @@ export default function Home() {
           <div className="lg:px-36 px-3">
             <About />
             <div className="relative">
-              <Features />
+              {loadStage >= LoadStage.TEASER_VIDEO ? (
+                <Features />
+              ) : (
+                <div
+                  style={{ minHeight: "60vh", visibility: "hidden" }}
+                  aria-hidden="true"
+                />
+              )}
 
               <div className="mt-[1300px] sm:mt-[550px] md:mt-[500px] w-full lg:mt-[500px]">
                 {loadStage >= LoadStage.TEASER_VIDEO ? (

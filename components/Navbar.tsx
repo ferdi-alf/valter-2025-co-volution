@@ -10,6 +10,7 @@ import {
 } from "framer-motion";
 import { BorderBeam } from "./ui/border-beam";
 import { useState } from "react";
+import { Instagram } from "lucide-react";
 
 const navItems = [
   { name: "Beranda", href: "/" },
@@ -106,42 +107,46 @@ const Navbar = ({ show }: { show: boolean }) => {
                     </motion.div>
                   ))}
                 </nav>
-
-                <motion.button
-                  className="lg:hidden p-2 text-gray-300 hover:text-white relative z-50"
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleMobileMenuClick}
-                >
-                  <motion.div
-                    animate={mobileMenuOpen ? "open" : "closed"}
-                    className="w-6 h-6 flex flex-col justify-center items-center"
+                <div className="flex gap-2 items-center">
+                  <a href="https://www.instagram.com/valterpolsri?utm_source=ig_web_button_share_sheet&igsh=MXNldWpqMnY5c29oYw==">
+                    <Instagram />
+                  </a>
+                  <motion.button
+                    className="lg:hidden p-2 text-gray-300 hover:text-white relative z-50"
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleMobileMenuClick}
                   >
-                    <motion.span
-                      variants={{
-                        closed: { rotate: 0, y: 0 },
-                        open: { rotate: 45, y: 6 },
-                      }}
-                      className="w-6 h-0.5 bg-current block mb-1.5"
-                      transition={{ duration: 0.3 }}
-                    />
-                    <motion.span
-                      variants={{
-                        closed: { opacity: 1 },
-                        open: { opacity: 0 },
-                      }}
-                      className="w-6 h-0.5 bg-current block mb-1.5"
-                      transition={{ duration: 0.3 }}
-                    />
-                    <motion.span
-                      variants={{
-                        closed: { rotate: 0, y: 0 },
-                        open: { rotate: -45, y: -6 },
-                      }}
-                      className="w-6 h-0.5 bg-current block"
-                      transition={{ duration: 0.3 }}
-                    />
-                  </motion.div>
-                </motion.button>
+                    <motion.div
+                      animate={mobileMenuOpen ? "open" : "closed"}
+                      className="w-6 h-6 flex flex-col justify-center items-center"
+                    >
+                      <motion.span
+                        variants={{
+                          closed: { rotate: 0, y: 0 },
+                          open: { rotate: 45, y: 6 },
+                        }}
+                        className="w-6 h-0.5 bg-current block mb-1.5"
+                        transition={{ duration: 0.3 }}
+                      />
+                      <motion.span
+                        variants={{
+                          closed: { opacity: 1 },
+                          open: { opacity: 0 },
+                        }}
+                        className="w-6 h-0.5 bg-current block mb-1.5"
+                        transition={{ duration: 0.3 }}
+                      />
+                      <motion.span
+                        variants={{
+                          closed: { rotate: 0, y: 0 },
+                          open: { rotate: -45, y: -6 },
+                        }}
+                        className="w-6 h-0.5 bg-current block"
+                        transition={{ duration: 0.3 }}
+                      />
+                    </motion.div>
+                  </motion.button>
+                </div>
               </div>
 
               <BorderBeam

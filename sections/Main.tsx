@@ -1,27 +1,50 @@
 import CountdownCards from "@/components/CountdownCards";
-import DarkVeil from "@/components/DarkVeil";
 import { AnimatedGradientText } from "@/components/ui/animated-gradient-text";
 import { AuroraText } from "@/components/ui/aurora-text";
 import { cn } from "@/lib/utils";
 import { ChevronRight } from "lucide-react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+const DarkVeil = dynamic(() => import("@/components/DarkVeil"), {
+  ssr: false,
+});
 
 const Main = () => {
+  const [showDarkVeil, setShowDarkVeil] = useState(true);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      const viewportHeight = window.innerHeight;
+
+      setShowDarkVeil(scrollY < viewportHeight);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
   return (
     <>
-      <div
-        style={{
-          position: "absolute",
-          width: "100%",
-          height: "100svh",
-          top: 0,
-          left: 0,
-          zIndex: 0,
-          pointerEvents: "none",
-        }}
-      >
-        <DarkVeil hueShift={340} />
-      </div>
+      {showDarkVeil && (
+        <div
+          style={{
+            position: "absolute",
+            width: "100%",
+            height: "100svh",
+            top: 0,
+            left: 0,
+            zIndex: 0,
+            pointerEvents: "none",
+            transform: "translateZ(0)",
+            willChange: "opacity",
+            backgroundColor: "black",
+            animation: "fadeInDarkVeil 2s ease-in-out forwards",
+          }}
+        >
+          <DarkVeil hueShift={340} />
+        </div>
+      )}
 
       <div className="w-full backdrop-blur-lg relative ">
         <div className="md:px-36">

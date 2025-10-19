@@ -843,16 +843,11 @@ class App {
   update() {
     this.raf = window.requestAnimationFrame(this.update.bind(this));
 
-    // TAMBAHKAN: FPS limiting
     const now = performance.now();
     const elapsed = now - this.lastFrameTime;
 
     if (elapsed < this.fpsLimit) return;
     this.lastFrameTime = now - (elapsed % this.fpsLimit);
-
-    // Hanya update jika ada perubahan signifikan
-    const scrollDiff = Math.abs(this.scroll.target - this.scroll.current);
-    if (scrollDiff < 0.01 && !this.isDown) return;
 
     this.scroll.current = lerp(
       this.scroll.current,
@@ -877,8 +872,6 @@ class App {
     this.boundOnTouchMove = this.onTouchMove.bind(this);
     this.boundOnTouchUp = this.onTouchUp.bind(this);
     window.addEventListener("resize", this.boundOnResize);
-    window.addEventListener("mousewheel", this.boundOnWheel);
-    window.addEventListener("wheel", this.boundOnWheel);
     window.addEventListener("mousedown", this.boundOnTouchDown);
     window.addEventListener("mousemove", this.boundOnTouchMove);
     window.addEventListener("mouseup", this.boundOnTouchUp);
@@ -890,8 +883,6 @@ class App {
   destroy() {
     window.cancelAnimationFrame(this.raf);
     window.removeEventListener("resize", this.boundOnResize);
-    window.removeEventListener("mousewheel", this.boundOnWheel);
-    window.removeEventListener("wheel", this.boundOnWheel);
     window.removeEventListener("mousedown", this.boundOnTouchDown);
     window.removeEventListener("mousemove", this.boundOnTouchMove);
     window.removeEventListener("mouseup", this.boundOnTouchUp);

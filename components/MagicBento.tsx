@@ -5,8 +5,7 @@ import "./MagicBento.css";
 import Lanyard from "./Lanyard";
 import SplitText from "./SplitText";
 import { AuroraText } from "./ui/aurora-text";
-import { TypingAnimation } from "./ui/typing-animation";
-import { motion } from "framer-motion";
+import Link from "next/link";
 
 export interface BentoCardProps {
   color?: string;
@@ -26,10 +25,8 @@ export interface BentoProps {
   disableAnimations?: boolean;
   spotlightRadius?: number;
   particleCount?: number;
-  enableTilt?: boolean;
   glowColor?: string;
   clickEffect?: boolean;
-  enableMagnetism?: boolean;
 }
 
 const DEFAULT_PARTICLE_COUNT = 12;
@@ -54,7 +51,7 @@ const cardData: BentoCardProps[] = [
       <div className="absolute top-0 right-2 flex justify-center items-center flex-col h-full w-full  border-none [mask-image:linear-gradient(to_top,transparent_10%,#000000_90%)] transition-all duration-300 ease-out group-hover:scale-90">
         <SplitText
           text="Creative synergy"
-          className="text-3xl font-black text-center"
+          className="text-3xl p-2 font-black text-center"
           delay={100}
           duration={0.6}
           ease="power3.out"
@@ -75,12 +72,7 @@ const cardData: BentoCardProps[] = [
     description: "Seminar VALTER 2025",
     children: (
       <div className="absolute scale-80 top-0 right-2  h-full w-full  border-none [mask-image:linear-gradient(to_top,transparent_10%,#000000_50%)] transition-all duration-300 ease-out group-hover:scale-90">
-        <TypingAnimation
-          startOnView
-          typeSpeed={12}
-          className="font-light  xl:text-2xl lg:text-lg text-sm"
-          loop={false}
-        >
+        <p className="font-light  xl:text-2xl lg:text-lg text-base">
           Seminar VALTER 2025 hadir sebagai acara puncak dari Festival
           Multimedia dan Komputer (VALTER)! Dengan mengusung tema “CoCreate or
           Compete: Kolaborasi atau Kompetisi bersama AI”, seminar ini menjadi
@@ -89,16 +81,14 @@ const cardData: BentoCardProps[] = [
           dan insight terbaru. Seminar ini menggali bagaimana kreativitas,
           teknologi, dan AI dapat berjalan berdampingan, sekaligus menjadi
           tantangan di era digital dan content creation
-        </TypingAnimation>
-        <motion.a
+        </p>
+        <Link
           href={`/seminar`}
           rel="noopener noreferrer"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
           className="flex items-center mt-2 justify-center gap-2 w-full bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-700 hover:to-fuchsia-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 shadow-lg shadow-purple-500/50 hover:shadow-purple-500/75"
         >
           Lihat Selengkapnya
-        </motion.a>
+        </Link>
       </div>
     ),
   },
@@ -281,16 +271,6 @@ const ParticleCard: React.FC<{
     const handleMouseEnter = () => {
       isHoveredRef.current = true;
       animateParticles();
-
-      if (enableTilt) {
-        gsap.to(element, {
-          rotateX: 5,
-          rotateY: 5,
-          duration: 0.3,
-          ease: "power2.out",
-          transformPerspective: 1000,
-        });
-      }
     };
 
     const handleMouseLeave = () => {
@@ -310,41 +290,6 @@ const ParticleCard: React.FC<{
         gsap.to(element, {
           x: 0,
           y: 0,
-          duration: 0.3,
-          ease: "power2.out",
-        });
-      }
-    };
-
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!enableTilt && !enableMagnetism) return;
-
-      const rect = element.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      const centerX = rect.width / 2;
-      const centerY = rect.height / 2;
-
-      if (enableTilt) {
-        const rotateX = ((y - centerY) / centerY) * -10;
-        const rotateY = ((x - centerX) / centerX) * 10;
-
-        gsap.to(element, {
-          rotateX,
-          rotateY,
-          duration: 0.1,
-          ease: "power2.out",
-          transformPerspective: 1000,
-        });
-      }
-
-      if (enableMagnetism) {
-        const magnetX = (x - centerX) * 0.05;
-        const magnetY = (y - centerY) * 0.05;
-
-        magnetismAnimationRef.current = gsap.to(element, {
-          x: magnetX,
-          y: magnetY,
           duration: 0.3,
           ease: "power2.out",
         });
@@ -398,14 +343,14 @@ const ParticleCard: React.FC<{
 
     element.addEventListener("mouseenter", handleMouseEnter);
     element.addEventListener("mouseleave", handleMouseLeave);
-    element.addEventListener("mousemove", handleMouseMove);
+
     element.addEventListener("click", handleClick);
 
     return () => {
       isHoveredRef.current = false;
       element.removeEventListener("mouseenter", handleMouseEnter);
       element.removeEventListener("mouseleave", handleMouseLeave);
-      element.removeEventListener("mousemove", handleMouseMove);
+
       element.removeEventListener("click", handleClick);
       clearAllParticles();
     };
@@ -614,10 +559,9 @@ const MagicBento: React.FC<BentoProps> = ({
   disableAnimations = false,
   spotlightRadius = DEFAULT_SPOTLIGHT_RADIUS,
   particleCount = DEFAULT_PARTICLE_COUNT,
-  enableTilt = false,
+
   glowColor = DEFAULT_GLOW_COLOR,
   clickEffect = true,
-  enableMagnetism = true,
 }) => {
   const gridRef = useRef<HTMLDivElement>(null);
   const isMobile = useMobileDetection();
@@ -655,9 +599,7 @@ const MagicBento: React.FC<BentoProps> = ({
                 disableAnimations={shouldDisableAnimations}
                 particleCount={particleCount}
                 glowColor={glowColor}
-                enableTilt={enableTilt}
                 clickEffect={clickEffect}
-                enableMagnetism={enableMagnetism}
               >
                 {card.children}
                 <div className="card__header">
@@ -690,61 +632,6 @@ const MagicBento: React.FC<BentoProps> = ({
               {...cardProps}
               ref={(el) => {
                 if (!el) return;
-
-                const handleMouseMove = (e: MouseEvent) => {
-                  if (shouldDisableAnimations) return;
-
-                  const rect = el.getBoundingClientRect();
-                  const x = e.clientX - rect.left;
-                  const y = e.clientY - rect.top;
-                  const centerX = rect.width / 2;
-                  const centerY = rect.height / 2;
-
-                  if (enableTilt) {
-                    const rotateX = ((y - centerY) / centerY) * -10;
-                    const rotateY = ((x - centerX) / centerX) * 10;
-                    gsap.to(el, {
-                      rotateX,
-                      rotateY,
-                      duration: 0.1,
-                      ease: "power2.out",
-                      transformPerspective: 1000,
-                    });
-                  }
-
-                  if (enableMagnetism) {
-                    const magnetX = (x - centerX) * 0.05;
-                    const magnetY = (y - centerY) * 0.05;
-                    gsap.to(el, {
-                      x: magnetX,
-                      y: magnetY,
-                      duration: 0.3,
-                      ease: "power2.out",
-                    });
-                  }
-                };
-
-                const handleMouseLeave = () => {
-                  if (shouldDisableAnimations) return;
-
-                  if (enableTilt) {
-                    gsap.to(el, {
-                      rotateX: 0,
-                      rotateY: 0,
-                      duration: 0.3,
-                      ease: "power2.out",
-                    });
-                  }
-
-                  if (enableMagnetism) {
-                    gsap.to(el, {
-                      x: 0,
-                      y: 0,
-                      duration: 0.3,
-                      ease: "power2.out",
-                    });
-                  }
-                };
 
                 const handleClick = (e: MouseEvent) => {
                   if (!clickEffect || shouldDisableAnimations) return;
@@ -791,8 +678,6 @@ const MagicBento: React.FC<BentoProps> = ({
                   );
                 };
 
-                el.addEventListener("mousemove", handleMouseMove);
-                el.addEventListener("mouseleave", handleMouseLeave);
                 el.addEventListener("click", handleClick);
               }}
             >

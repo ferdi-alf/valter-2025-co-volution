@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Laporan Progress Project</title>
+    <style>
+      @media print {
+        body {
+          margin: 0;
+        }
+        .page-break {
+          page-break-after: always;
+        }
+      }
+
+      body {
+        font-family: "Times New Roman", Times, serif;
+        line-height: 1.8;
+        color: #000;
+        max-width: 210mm;
+        margin: 0 auto;
+        padding: 20mm;
+        background: #fff;
+      }
+
+      .container {
+        background: white;
+        padding: 20px;
+      }
+
+      .header {
+        text-align: center;
+        border-bottom: 2px solid #000;
+        padding-bottom: 15px;
+        margin-bottom: 30px;
+      }
+
+      .header h1 {
+        margin: 0;
+        font-size: 24px;
+        font-weight: bold;
+      }
+
+      .header .subtitle {
+        margin-top: 5px;
+        font-size: 14px;
+      }
+
+      .developer-info {
+        margin-bottom: 30px;
+        padding: 10px;
+        border: 1px solid #000;
+      }
+
+      .developer-info p {
+        margin: 5px 0;
+      }
+
+      .project-section {
+        margin-bottom: 40px;
+      }
+
+      .project-header {
+        border-bottom: 1px solid #000;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+      }
+
+      .project-header h2 {
+        margin: 0;
+        font-size: 20px;
+        font-weight: bold;
+      }
+
+      .feature {
+        margin-bottom: 25px;
+        padding-left: 20px;
+      }
+
+      .feature h3 {
+        margin: 0 0 10px 0;
+        font-size: 16px;
+        font-weight: bold;
+      }
+
+      .feature-description {
+        margin-bottom: 15px;
+        text-align: justify;
+      }
+
+      .benefits {
+        margin-top: 10px;
+        padding-left: 15px;
+      }
+
+      .benefits h4 {
+        margin: 10px 0;
+        font-size: 14px;
+        font-weight: bold;
+      }
+
+      .benefits ul {
+        margin: 5px 0;
+        padding-left: 20px;
+      }
+
+      .benefits li {
+        margin-bottom: 8px;
+        text-align: justify;
+      }
+
+      .tech-stack {
+        margin-top: 10px;
+        font-style: italic;
+      }
+
+      .footer {
+        margin-top: 50px;
+        padding-top: 20px;
+        border-top: 1px solid #000;
+        text-align: center;
+        font-size: 12px;
+      }
+
+      .print-button {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        background: #000;
+        color: white;
+        border: none;
+        padding: 12px 25px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      .print-button:hover {
+        background: #333;
+      }
+
+      @media print {
+        .print-button {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>LAPORAN PROGRESS PROJECT</h1>
+        <div class="subtitle">Periode: Oktober 2025</div>
+      </div>
+
+      <div class="developer-info">
+        <p><strong>Nama:</strong> Muhammad Ferdi Alfian</p>
+      </div>
+
+      <div class="project-section">
+        <div class="project-header">
+          <h2>Project 1: Learning Management System (LMS)</h2>
+        </div>
+
+        <div class="feature">
+          <h3>1.1 Refactor Code dan Optimasi Performance</h3>
+          <div class="feature-description">
+            Melakukan refactoring kode untuk mengimplementasikan sistem
+            pengambilan data secara on-demand dan asynchronous. Perubahan
+            arsitektur dari eager loading menjadi lazy loading untuk
+            meningkatkan performa aplikasi. Data detail tidak langsung diambil
+            di awal, melainkan di-fetch ketika dibutuhkan oleh user.
+          </div>
+
+          <div class="benefits">
+            <h4>Keuntungan Implementasi On-Demand Fetch:</h4>
+            <ul>
+              <li>
+                Peningkatan kecepatan load awal halaman karena hanya memuat data
+                yang essential
+              </li>
+              <li>
+                Efisiensi bandwidth dengan hanya mengambil data yang benar-benar
+                diperlukan user
+              </li>
+              <li>
+                Skalabilitas lebih baik karena server tidak terbebani dengan
+                query data yang tidak terpakai
+              </li>
+              <li>
+                User experience lebih responsif dengan loading state yang tepat
+              </li>
+              <li>
+                Optimasi resource database dengan query yang lebih spesifik dan
+                targeted
+              </li>
+              <li>Maintenance lebih mudah karena kode lebih modular</li>
+            </ul>
+          </div>
+
+          <div class="tech-stack">Teknologi: Laravel, Alpine.js</div>
+        </div>
+
+        <div class="feature">
+          <h3>1.2 Halaman Manajemen Blog</h3>
+          <div class="feature-description">
+            Pengembangan fitur content management untuk blog dengan text editor
+            Quill. Fitur ini dirancang untuk memudahkan admin dalam mengelola
+            artikel dan konten edukatif. Saat ini masih dalam tahap pengembangan
+            dan terdapat beberapa bug yang sedang diperbaiki.
+          </div>
+
+          <div class="benefits">
+            <h4>Status Pengembangan:</h4>
+            <ul>
+              <li>Implementasi Quill Editor dengan toolbar custom</li>
+              <li>
+                Fitur Create, Read, Update, Delete artikel dengan rich text
+                formatting
+              </li>
+              <li>Upload dan manage gambar dalam artikel</li>
+              <li>Masih terdapat bug terkait formatting dan image handling</li>
+              <li>Dalam proses fixing untuk production ready</li>
+            </ul>
+          </div>
+
+          <div class="tech-stack">Teknologi: Laravel, Alpine.js, Quill.js</div>
+        </div>
+      </div>
+
+      <div class="page-break"></div>
+
+      <div class="project-section">
+        <div class="project-header">
+          <h2>Project 2: Palembang Nearby</h2>
+        </div>
+
+        <div class="feature">
+          <h3>2.1 Konsep dan Fitur Utama</h3>
+          <div class="feature-description">
+            Platform digital untuk menampilkan katalog produk UMKM lokal
+            Palembang dengan fitur pencarian berdasarkan lokasi terdekat dari
+            user. Sistem ini membantu UMKM dalam digitalisasi dan mempermudah
+            customer menemukan produk lokal. UMKM dapat mendaftar dan mengelola
+            toko mereka sendiri melalui platform ini.
+          </div>
+
+          <div class="benefits">
+            <h4>Fitur Utama Platform:</h4>
+            <ul>
+              <li>Katalog produk UMKM dengan informasi lengkap</li>
+              <li>Menampilkan toko UMKM terdekat berdasarkan lokasi user</li>
+              <li>Sistem registrasi untuk UMKM</li>
+              <li>Interface yang user-friendly untuk customer dan UMKM</li>
+            </ul>
+          </div>
+
+          <div class="tech-stack">Teknologi: Laravel, Inertia.js, React</div>
+        </div>
+
+        <div class="feature">
+          <h3>2.2 Progress Pengembangan</h3>
+          <div class="feature-description">
+            Project sedang dalam fase pengembangan awal dengan setup
+            infrastruktur dan implementasi fitur-fitur fundamental.
+          </div>
+
+          <div class="benefits">
+            <h4>Yang Sudah Dikerjakan:</h4>
+            <ul>
+              <li>Instalasi project dengan Laravel, Inertia.js, dan React</li>
+              <li>Pembuatan halaman landing/homepage</li>
+              <li>Implementasi sistem login untuk user dan UMKM</li>
+              <li>
+                Pembuatan sistem registrasi dengan stepper yang mencakup:
+                <ul>
+                  <li>Step 1: Informasi akun (username, email, password)</li>
+                  <li>
+                    Step 2: Informasi toko (nama toko, deskripsi, kategori)
+                  </li>
+                  <li>
+                    Step 3: Lokasi dan kontak (alamat, koordinat, nomor telepon)
+                  </li>
+                  <li>Step 4: Verifikasi dan konfirmasi</li>
+                </ul>
+              </li>
+            </ul>
+          </div>
+
+          <div class="benefits">
+            <h4>Rencana Selanjutnya:</h4>
+            <ul>
+              <li>Dashboard UMKM untuk manage produk dan toko</li>
+              <li>Implementasi fitur location-based search dan mapping</li>
+              <li>Sistem katalog produk dengan filter dan search</li>
+              <li>Integration dengan payment gateway</li>
+            </ul>
+          </div>
+
+          <div class="tech-stack">Teknologi: Laravel, Inertia.js, React</div>
+        </div>
+      </div>
+
+      <div class="footer">
+        <p><strong>Muhammad Ferdi Alfian</strong></p>
+        <p>Dokumen dibuat pada: Oktober 2025</p>
+      </div>
+    </div>
+
+    <button class="print-button" onclick="window.print()">
+      Print / Save PDF
+    </button>
+  </body>
+</html>

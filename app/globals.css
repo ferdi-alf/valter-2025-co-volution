@@ -43,7 +43,6 @@
   -webkit-font-smoothing: antialiased;
 }
 
-/* Containment untuk isolasi rendering */
 .timeline-section {
   contain: layout style paint;
 }
@@ -51,10 +50,6 @@
 .media-partner-section {
   contain: layout style;
 }
-
-/* ============================================
-   TIMELINE ANIMATIONS
-   ============================================ */
 
 @keyframes ping-slow {
   0%,
