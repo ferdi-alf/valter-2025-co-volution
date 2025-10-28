@@ -46,7 +46,7 @@ const Main = () => {
         </div>
       )}
 
-      <div className="w-full backdrop-blur-lg relative ">
+      <div id="beranda" className="w-full backdrop-blur-lg relative ">
         <div className="md:px-36">
           <div className="font-sans bg-transparent relative flex flex-col justify-evenly pt-7 items-center min-h-screen">
             <Link

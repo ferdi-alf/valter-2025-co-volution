@@ -6,8 +6,6 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  /* transform: scale(1); */
-  /* transform-origin: center; */
 }
 
 @media (min-width: 760px) and (max-width: 1024px) {

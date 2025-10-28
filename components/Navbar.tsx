@@ -123,7 +123,7 @@ const Navbar = ({ show }: { show: boolean }) => {
                       <motion.span
                         variants={{
                           closed: { rotate: 0, y: 0 },
-                          open: { rotate: 45, y: 6 },
+                          open: { rotate: 45, y: 8 },
                         }}
                         className="w-6 h-0.5 bg-current block mb-1.5"
                         transition={{ duration: 0.3 }}
@@ -139,7 +139,7 @@ const Navbar = ({ show }: { show: boolean }) => {
                       <motion.span
                         variants={{
                           closed: { rotate: 0, y: 0 },
-                          open: { rotate: -45, y: -6 },
+                          open: { rotate: -45, y: -8 },
                         }}
                         className="w-6 h-0.5 bg-current block"
                         transition={{ duration: 0.3 }}
